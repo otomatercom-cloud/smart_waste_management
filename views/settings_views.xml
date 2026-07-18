@@ -85,8 +85,7 @@
         <field name="name">Smart Waste Settings</field>
         <field name="res_model">res.config.settings</field>
         <field name="view_mode">form</field>
-        <field name="target">inline</field>
-        <field name="context">{'module': 'smart_waste_management'}</field>
+        <field name="context">{'module': 'smart_waste_management', 'bin_size': False}</field>
     </record>
 
 </odoo>
