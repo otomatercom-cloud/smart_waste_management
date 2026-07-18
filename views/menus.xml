@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root -->
+    <menuitem id="menu_swm_root" name="Smart Waste"
+              web_icon="smart_waste_management,static/description/icon.png"
+              groups="smart_waste_management.group_swm_association_staff,smart_waste_management.group_swm_collection_staff"
+              sequence="55"/>
+
+    <!-- Dashboard -->
+    <menuitem id="menu_swm_dashboard" name="Dashboard"
+              parent="menu_swm_root" action="action_swm_dashboard"
+              sequence="1"/>
+
+    <!-- Operations -->
+    <menuitem id="menu_swm_operations" name="Operations"
+              parent="menu_swm_root" sequence="10"/>
+    <menuitem id="menu_swm_bins" name="Smart Bins"
+              parent="menu_swm_operations" action="action_swm_bin"
+              sequence="1"/>
+    <menuitem id="menu_swm_requests" name="Collection Requests"
+              parent="menu_swm_operations" action="action_swm_request"
+              sequence="2"/>
+    <menuitem id="menu_swm_history" name="Collection History"
+              parent="menu_swm_operations" action="action_swm_history"
+              sequence="3"/>
+    <menuitem id="menu_swm_complaints" name="Complaints"
+              parent="menu_swm_operations" action="action_swm_complaint"
+              sequence="4"/>
+    <menuitem id="menu_swm_readings" name="Sensor Readings"
+              parent="menu_swm_operations" action="action_swm_reading"
+              groups="smart_waste_management.group_swm_supervisor"
+              sequence="5"/>
+
+    <!-- Structure -->
+    <menuitem id="menu_swm_structure" name="Structure"
+              parent="menu_swm_root" sequence="20"
+              groups="smart_waste_management.group_swm_association_manager"/>
+    <menuitem id="menu_swm_corporations" name="Corporations"
+              parent="menu_swm_structure" action="action_swm_corporation"
+              groups="smart_waste_management.group_swm_corporation_manager"
+              sequence="1"/>
+    <menuitem id="menu_swm_zones" name="Zones"
+              parent="menu_swm_structure" action="action_swm_zone"
+              groups="smart_waste_management.group_swm_zone_manager"
+              sequence="2"/>
+    <menuitem id="menu_swm_wards" name="Wards"
+              parent="menu_swm_structure" action="action_swm_ward"
+              groups="smart_waste_management.group_swm_ward_manager"
+              sequence="3"/>
+    <menuitem id="menu_swm_associations" name="Associations"
+              parent="menu_swm_structure" action="action_swm_association"
+              sequence="4"/>
+    <menuitem id="menu_swm_members" name="Members"
+              parent="menu_swm_structure" action="action_swm_member"
+              sequence="5"/>
+    <menuitem id="menu_swm_streets" name="Streets"
+              parent="menu_swm_structure" action="action_swm_street"
+              sequence="6"/>
+
+    <!-- Staff -->
+    <menuitem id="menu_swm_staff_root" name="Staff"
+              parent="menu_swm_root" sequence="30"
+              groups="smart_waste_management.group_swm_supervisor"/>
+    <menuitem id="menu_swm_staff" name="Collection Staff"
+              parent="menu_swm_staff_root" action="action_swm_staff"
+              sequence="1"/>
+
+    <!-- Notifications -->
+    <menuitem id="menu_swm_notifications" name="Notifications"
+              parent="menu_swm_root" sequence="40"
+              groups="smart_waste_management.group_swm_manager"/>
+    <menuitem id="menu_swm_rules" name="Notification Rules"
+              parent="menu_swm_notifications" action="action_swm_rule"
+              sequence="1"/>
+    <menuitem id="menu_swm_templates" name="Message Templates"
+              parent="menu_swm_notifications" action="action_swm_tmpl"
+              sequence="2"/>
+    <menuitem id="menu_swm_notif_logs" name="Notification Logs"
+              parent="menu_swm_notifications" action="action_swm_notif_log"
+              sequence="3"/>
+    <menuitem id="menu_swm_tg_tokens" name="Telegram Link Tokens"
+              parent="menu_swm_notifications" action="action_swm_tg_token"
+              sequence="4"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_swm_config" name="Configuration"
+              parent="menu_swm_root" sequence="90"
+              groups="smart_waste_management.group_swm_manager"/>
+    <menuitem id="menu_swm_settings" name="Settings"
+              parent="menu_swm_config" action="action_swm_settings"
+              sequence="1"/>
+
+</odoo>

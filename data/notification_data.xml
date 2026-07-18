@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Otomater. See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <data noupdate="1">
+        <!-- Templates -->
+        <record id="tmpl_bin_full" model="otm.swm.notification.template">
+            <field name="name">Bin Full Alert</field>
+            <field name="body">🗑️ Bin Full Alert
+
+Bin: {bin_code}
+Street: {street}
+Association: {association}
+Fill Level: {fill}%
+Time: {time}
+
+Waste collection is required.
+View: {link}</field>
+        </record>
+
+        <record id="tmpl_nearly_full" model="otm.swm.notification.template">
+            <field name="name">Bin Nearly Full</field>
+            <field name="body">⚠️ Bin Nearly Full
+
+Bin: {bin_code} ({street}, {association})
+Fill Level: {fill}%
+Time: {time}</field>
+        </record>
+
+        <record id="tmpl_collected" model="otm.swm.notification.template">
+            <field name="name">Collection Completed</field>
+            <field name="body">✅ Waste Collection Completed
+
+Bin: {bin_code}
+Street: {street}
+Status: {status}
+Response Time: {response_hours} h
+Collection completed successfully.</field>
+        </record>
+
+        <record id="tmpl_delayed" model="otm.swm.notification.template">
+            <field name="name">Collection Delayed</field>
+            <field name="body">⏰ Collection Delayed
+
+Bin: {bin_code} ({street}, {association})
+Full since: {full_since}
+Fill Level: {fill}%
+Request: {request}
+Assigned Staff: {staff}
+
+Please take action.</field>
+        </record>
+
+        <record id="tmpl_device_offline" model="otm.swm.notification.template">
+            <field name="name">Device Offline</field>
+            <field name="body">📡 Device Offline
+
+Bin: {bin_code} ({street}, {association})
+Last communication was too long ago. Please check the sensor device.</field>
+        </record>
+
+        <record id="tmpl_device_online" model="otm.swm.notification.template">
+            <field name="name">Device Back Online</field>
+            <field name="body">📶 Device Back Online
+
+Bin: {bin_code} ({street}, {association}) is reporting again.
+Current Fill Level: {fill}%</field>
+        </record>
+
+        <record id="tmpl_maintenance" model="otm.swm.notification.template">
+            <field name="name">Maintenance Required</field>
+            <field name="body">🔧 Maintenance Required
+
+Bin: {bin_code} ({street}, {association})
+The bin has been placed in maintenance mode.</field>
+        </record>
+
+        <!-- Default rules (all editable/deactivatable by administrators) -->
+        <record id="rule_full_staff" model="otm.swm.notification.rule">
+            <field name="name">Bin Full → Collection Staff (immediate)</field>
+            <field name="trigger_type">bin_full</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">collection_staff</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_internal" eval="True"/>
+            <field name="template_id" ref="tmpl_bin_full"/>
+        </record>
+
+        <record id="rule_full_members" model="otm.swm.notification.rule">
+            <field name="name">Bin Full → Association Members (immediate)</field>
+            <field name="trigger_type">bin_full</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">association_members</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="template_id" ref="tmpl_bin_full"/>
+        </record>
+
+        <record id="rule_delay_supervisor" model="otm.swm.notification.rule">
+            <field name="name">Collection Delayed 2h → Supervisor (Escalation 1)</field>
+            <field name="trigger_type">collection_delayed</field>
+            <field name="delay_number">2</field>
+            <field name="delay_unit">hours</field>
+            <field name="recipient_type">supervisor</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_internal" eval="True"/>
+            <field name="template_id" ref="tmpl_delayed"/>
+            <field name="escalation_level">1</field>
+        </record>
+
+        <record id="rule_delay_president" model="otm.swm.notification.rule">
+            <field name="name">Collection Delayed 6h → Association President (Escalation 2)</field>
+            <field name="trigger_type">collection_delayed</field>
+            <field name="delay_number">6</field>
+            <field name="delay_unit">hours</field>
+            <field name="recipient_type">association_president</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="template_id" ref="tmpl_delayed"/>
+            <field name="escalation_level">2</field>
+        </record>
+
+        <record id="rule_delay_officer" model="otm.swm.notification.rule">
+            <field name="name">Collection Delayed 24h → Corporation Officer (Escalation 3)</field>
+            <field name="trigger_type">collection_delayed</field>
+            <field name="delay_number">24</field>
+            <field name="delay_unit">hours</field>
+            <field name="recipient_type">corporation_officer</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_email" eval="True"/>
+            <field name="template_id" ref="tmpl_delayed"/>
+            <field name="escalation_level">3</field>
+        </record>
+
+        <record id="rule_collected_members" model="otm.swm.notification.rule">
+            <field name="name">Bin Empty → Association Members (immediate)</field>
+            <field name="trigger_type">collection_completed</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">association_members</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="template_id" ref="tmpl_collected"/>
+        </record>
+
+        <record id="rule_offline_supervisor" model="otm.swm.notification.rule">
+            <field name="name">Device Offline → Supervisor (immediate)</field>
+            <field name="trigger_type">device_offline</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">supervisor</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_internal" eval="True"/>
+            <field name="template_id" ref="tmpl_device_offline"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="smart_waste_management.SwmDashboard">
+        <div class="o_swm_dashboard">
+            <div class="swm-dash-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Waste Management Dashboard</h2>
+                <button class="btn btn-secondary btn-sm"
+                        t-on-click="refresh">
+                    <i class="fa fa-refresh me-1" role="img"
+                       aria-label="Refresh"/> Refresh
+                </button>
+            </div>
+
+            <div t-if="state.loading" class="swm-dash-loading">
+                <i class="fa fa-spin fa-circle-o-notch me-2" role="img"
+                   aria-label="Loading"/> Loading…
+            </div>
+
+            <div t-else="">
+                <!-- KPI tiles -->
+                <div class="swm-dash-kpis">
+                    <div class="swm-tile swm-tile-total"
+                         t-on-click="onKpiTotal">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.total"/>
+                        <div class="swm-tile-label">Total Bins</div>
+                    </div>
+                    <div class="swm-tile swm-tile-ok"
+                         t-on-click="onKpiAvailable">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.available"/>
+                        <div class="swm-tile-label">Available</div>
+                    </div>
+                    <div class="swm-tile swm-tile-warn"
+                         t-on-click="onKpiNearlyFull">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.nearly_full"/>
+                        <div class="swm-tile-label">Nearly Full</div>
+                    </div>
+                    <div class="swm-tile swm-tile-danger"
+                         t-on-click="onKpiFull">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.full"/>
+                        <div class="swm-tile-label">Full</div>
+                    </div>
+                    <div class="swm-tile swm-tile-info"
+                         t-on-click="onKpiPending">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.pending"/>
+                        <div class="swm-tile-label">Pending Collection</div>
+                    </div>
+                    <div class="swm-tile swm-tile-muted"
+                         t-on-click="onKpiOffline">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.offline"/>
+                        <div class="swm-tile-label">Offline</div>
+                    </div>
+                    <div class="swm-tile swm-tile-primary"
+                         t-on-click="onKpiOpenRequests">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.open_requests"/>
+                        <div class="swm-tile-label">Open Requests</div>
+                    </div>
+                    <div class="swm-tile swm-tile-danger"
+                         t-on-click="onKpiEscalated">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.escalated"/>
+                        <div class="swm-tile-label">Escalated</div>
+                    </div>
+                    <div class="swm-tile swm-tile-warn"
+                         t-on-click="openComplaints">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.complaints_open"/>
+                        <div class="swm-tile-label">Open Complaints</div>
+                    </div>
+                    <div class="swm-tile swm-tile-plain">
+                        <div class="swm-tile-num">
+                            <t t-esc="state.kpi.avg_response"/>h
+                        </div>
+                        <div class="swm-tile-label">Avg Response</div>
+                    </div>
+                </div>
+
+                <div class="swm-dash-columns">
+                    <!-- Corporation drill-down -->
+                    <div class="swm-dash-panel">
+                        <h5>Bins by Corporation / Municipality</h5>
+                        <table class="table table-sm swm-dash-table">
+                            <thead>
+                                <tr>
+                                    <th>Body</th>
+                                    <th class="text-end">Bins</th>
+                                    <th class="text-end">Full / Pending</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="state.byCorporation"
+                                    t-as="c" t-key="c.id"
+                                    class="swm-dash-row"
+                                    t-on-click="() => this.onCorpRow(c.id)">
+                                    <td t-esc="c.name"/>
+                                    <td class="text-end" t-esc="c.bins"/>
+                                    <td class="text-end">
+                                        <span t-att-class="c.full ? 'text-danger fw-bold' : ''"
+                                              t-esc="c.full"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="!state.byCorporation.length">
+                                    <td colspan="3" class="text-muted">
+                                        No bins registered yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Oldest open requests -->
+                    <div class="swm-dash-panel">
+                        <h5>Oldest Open Collection Requests</h5>
+                        <table class="table table-sm swm-dash-table">
+                            <thead>
+                                <tr>
+                                    <th>Request</th>
+                                    <th>Bin</th>
+                                    <th>Staff</th>
+                                    <th>State</th>
+                                    <th class="text-end">Esc.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="state.recentRequests"
+                                    t-as="r" t-key="r.id"
+                                    class="swm-dash-row"
+                                    t-on-click="() => this.openRequest(r.id)">
+                                    <td t-esc="r.name"/>
+                                    <td t-esc="r.bin_code"/>
+                                    <td t-esc="r.staff_id ? r.staff_id[1] : '—'"/>
+                                    <td t-esc="r.state"/>
+                                    <td class="text-end">
+                                        <span t-att-class="r.escalation_level ? 'text-danger fw-bold' : ''"
+                                              t-esc="r.escalation_level"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="!state.recentRequests.length">
+                                    <td colspan="5" class="text-muted">
+                                        No open requests. 🎉
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_swm_bin_kanban" model="ir.ui.view">
+        <field name="name">otm.swm.bin.kanban</field>
+        <field name="model">otm.swm.bin</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status" class="o_kanban_mobile">
+                <field name="status"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="swm-kanban-card p-2">
+                            <div class="d-flex justify-content-between">
+                                <strong><field name="code"/></strong>
+                                <field name="status" widget="badge"
+                                       decoration-success="status in ('available', 'collected')"
+                                       decoration-warning="status == 'nearly_full'"
+                                       decoration-danger="status in ('full', 'collection_pending')"
+                                       decoration-info="status == 'collection_in_progress'"/>
+                            </div>
+                            <div><field name="name"/></div>
+                            <div class="text-muted">
+                                <field name="street_id"/> ·
+                                <field name="association_id"/>
+                            </div>
+                            <div class="mt-1">
+                                <field name="fill_percentage"
+                                       widget="progressbar"/>
+                            </div>
+                            <div class="text-muted small">
+                                Last: <field name="last_reading_time"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_swm_bin_list" model="ir.ui.view">
+        <field name="name">otm.swm.bin.list</field>
+        <field name="model">otm.swm.bin</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="status in ('full', 'collection_pending')"
+                  decoration-warning="status == 'nearly_full'"
+                  decoration-muted="status in ('offline', 'maintenance')">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="street_id"/>
+                <field name="association_id"/>
+                <field name="corporation_id" optional="hide"/>
+                <field name="fill_percentage" widget="progressbar"/>
+                <field name="status"/>
+                <field name="device_online" widget="boolean_toggle"
+                       optional="show"/>
+                <field name="battery_level" optional="hide"/>
+                <field name="last_reading_time" optional="show"/>
+                <field name="staff_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_bin_form" model="ir.ui.view">
+        <field name="name">otm.swm.bin.form</field>
+        <field name="model">otm.swm.bin</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_set_maintenance" type="object"
+                            string="Set Maintenance"
+                            invisible="status == 'maintenance'"
+                            groups="smart_waste_management.group_swm_supervisor"/>
+                    <button name="action_clear_maintenance" type="object"
+                            string="Clear Maintenance"
+                            invisible="status != 'maintenance'"
+                            groups="smart_waste_management.group_swm_supervisor"/>
+                    <button name="action_regenerate_token" type="object"
+                            string="Regenerate API Token"
+                            confirm="Regenerate the device API token? The ESP32 firmware must be updated with the new token."
+                            groups="smart_waste_management.group_swm_manager"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="code" readonly="1"/></h1>
+                        <h2><field name="name" placeholder="Bin Name"/></h2>
+                    </div>
+                    <group>
+                        <group string="Location">
+                            <field name="association_id"/>
+                            <field name="street_id"/>
+                            <field name="ward_id"/>
+                            <field name="zone_id"/>
+                            <field name="corporation_id"/>
+                            <field name="latitude"/>
+                            <field name="longitude"/>
+                            <field name="location_note"/>
+                        </group>
+                        <group string="Bin Details">
+                            <field name="installation_date"/>
+                            <field name="capacity_liters"/>
+                            <field name="bin_height_cm"/>
+                            <field name="staff_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Device">
+                            <field name="device_id"/>
+                            <field name="api_token" password="True"
+                                   groups="smart_waste_management.group_swm_manager"/>
+                            <field name="device_online"/>
+                            <field name="last_communication"/>
+                            <field name="battery_level"/>
+                            <field name="signal_strength"/>
+                        </group>
+                        <group string="Live Status">
+                            <field name="fill_percentage" widget="progressbar"/>
+                            <field name="current_distance_cm"/>
+                            <field name="last_reading_time"/>
+                            <field name="last_status_change"/>
+                            <field name="full_since"/>
+                            <field name="last_emptied_time"/>
+                        </group>
+                    </group>
+                    <group string="Public QR Page">
+                        <field name="public_url" widget="url"/>
+                        <field name="qr_image_url" widget="url"/>
+                    </group>
+                    <notebook>
+                        <page string="Recent Readings" name="readings">
+                            <field name="reading_ids" limit="20">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="distance_cm"/>
+                                    <field name="fill_percentage"/>
+                                    <field name="battery_level"/>
+                                    <field name="signal_strength"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Collection Requests" name="requests">
+                            <field name="collection_request_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="full_detected_time"/>
+                                    <field name="staff_id"/>
+                                    <field name="state"/>
+                                    <field name="escalation_level"/>
+                                    <field name="response_hours"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Complaints" name="complaints">
+                            <field name="complaint_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="complaint_type"/>
+                                    <field name="report_date"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_bin_search" model="ir.ui.view">
+        <field name="name">otm.swm.bin.search</field>
+        <field name="model">otm.swm.bin</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="device_id"/>
+                <field name="street_id"/>
+                <field name="association_id"/>
+                <field name="corporation_id"/>
+                <filter string="Available" name="f_available"
+                        domain="[('status', 'in', ('available', 'collected'))]"/>
+                <filter string="Nearly Full" name="f_nearly"
+                        domain="[('status', '=', 'nearly_full')]"/>
+                <filter string="Full / Pending" name="f_full"
+                        domain="[('status', 'in', ('full', 'collection_pending', 'collection_in_progress'))]"/>
+                <filter string="Offline" name="f_offline"
+                        domain="[('status', '=', 'offline')]"/>
+                <filter string="Maintenance" name="f_maint"
+                        domain="[('status', '=', 'maintenance')]"/>
+                <separator/>
+                <filter string="Device Online" name="f_online"
+                        domain="[('device_online', '=', True)]"/>
+                <filter string="Archived" name="f_inactive"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Status" name="gb_status"
+                        context="{'group_by': 'status'}"/>
+                <filter string="Street" name="gb_street"
+                        context="{'group_by': 'street_id'}"/>
+                <filter string="Association" name="gb_assoc"
+                        context="{'group_by': 'association_id'}"/>
+                <filter string="Corporation" name="gb_corp"
+                        context="{'group_by': 'corporation_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_bin" model="ir.actions.act_window">
+        <field name="name">Smart Bins</field>
+        <field name="res_model">otm.swm.bin</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Register your first Smart Bin
+            </p>
+            <p>Each bin gets a unique code and a device API token for its
+               ESP32 sensor.</p>
+        </field>
+    </record>
+
+</odoo>

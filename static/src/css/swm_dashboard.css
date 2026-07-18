@@ -1,0 +1,104 @@
+/* Part of Otomater. See LICENSE file for full copyright and licensing
+   details. Plain CSS only (no SCSS) per Odoo 19 asset rules. */
+
+.o_swm_dashboard {
+    padding: 16px 24px;
+    background: #f8f9fa;
+    min-height: 100%;
+    overflow: auto;
+}
+
+.swm-dash-header {
+    margin-bottom: 16px;
+}
+
+.swm-dash-loading {
+    padding: 40px;
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* KPI tiles */
+.swm-dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.swm-tile {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #adb5bd;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.swm-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.swm-tile-plain {
+    cursor: default;
+}
+
+.swm-tile-num {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.swm-tile-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.swm-tile-total { border-left-color: #714b67; }
+.swm-tile-ok { border-left-color: #28a745; }
+.swm-tile-warn { border-left-color: #ffc107; }
+.swm-tile-danger { border-left-color: #dc3545; }
+.swm-tile-info { border-left-color: #17a2b8; }
+.swm-tile-muted { border-left-color: #6c757d; }
+.swm-tile-primary { border-left-color: #0d6efd; }
+
+/* Panels */
+.swm-dash-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 992px) {
+    .swm-dash-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.swm-dash-panel {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.swm-dash-table {
+    margin-bottom: 0;
+}
+
+.swm-dash-row {
+    cursor: pointer;
+}
+
+.swm-dash-row:hover {
+    background: #f1f3f5;
+}
+
+/* Backend kanban card accent */
+.swm-kanban-card {
+    width: 100%;
+}

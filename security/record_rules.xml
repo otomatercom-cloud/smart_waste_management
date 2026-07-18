@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Otomater. See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <!-- ============ Administrator: unrestricted ============ -->
+    <record id="rule_bin_admin_all" model="ir.rule">
+        <field name="name">SWM Bin: administrator all</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_manager'))]"/>
+    </record>
+
+    <!-- ============ Portal members: own association only ============ -->
+    <record id="rule_bin_portal" model="ir.rule">
+        <field name="name">SWM Bin: portal member own association</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">[('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_street_portal" model="ir.rule">
+        <field name="name">SWM Street: portal member own association</field>
+        <field name="model_id" ref="model_otm_swm_street"/>
+        <field name="domain_force">[('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+    </record>
+
+    <record id="rule_association_portal" model="ir.rule">
+        <field name="name">SWM Association: portal member own association</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
+        <field name="domain_force">[('member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+    </record>
+
+    <record id="rule_member_portal" model="ir.rule">
+        <field name="name">SWM Member: portal member sees/edits only self</field>
+        <field name="model_id" ref="model_otm_swm_association_member"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+    </record>
+
+    <record id="rule_request_portal" model="ir.rule">
+        <field name="name">SWM Request: portal member own association</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">[('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+    </record>
+
+    <record id="rule_complaint_portal" model="ir.rule">
+        <field name="name">SWM Complaint: portal member own association</field>
+        <field name="model_id" ref="model_otm_swm_complaint"/>
+        <field name="domain_force">[('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_portal_member'))]"/>
+    </record>
+
+    <!-- ============ Association manager/staff: own association ============ -->
+    <record id="rule_bin_association" model="ir.rule">
+        <field name="name">SWM Bin: association scope</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">['|', ('association_id.manager_user_id', '=', user.id), ('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <record id="rule_association_association" model="ir.rule">
+        <field name="name">SWM Association: association scope</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
+        <field name="domain_force">['|', ('manager_user_id', '=', user.id), ('member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <record id="rule_street_association" model="ir.rule">
+        <field name="name">SWM Street: association scope</field>
+        <field name="model_id" ref="model_otm_swm_street"/>
+        <field name="domain_force">['|', ('association_id.manager_user_id', '=', user.id), ('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <record id="rule_request_association" model="ir.rule">
+        <field name="name">SWM Request: association scope</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">['|', ('association_id.manager_user_id', '=', user.id), ('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <record id="rule_complaint_association" model="ir.rule">
+        <field name="name">SWM Complaint: association scope</field>
+        <field name="model_id" ref="model_otm_swm_complaint"/>
+        <field name="domain_force">['|', ('association_id.manager_user_id', '=', user.id), ('association_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <!-- ============ Ward / Zone managers ============ -->
+    <record id="rule_bin_ward" model="ir.rule">
+        <field name="name">SWM Bin: ward officer scope</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">[('ward_id.officer_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_ward_manager'))]"/>
+    </record>
+
+    <record id="rule_bin_zone" model="ir.rule">
+        <field name="name">SWM Bin: zone manager scope</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">[('zone_id.manager_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_zone_manager'))]"/>
+    </record>
+
+    <!-- ============ Corporation manager: own corporation ============ -->
+    <record id="rule_bin_corporation" model="ir.rule">
+        <field name="name">SWM Bin: corporation officer scope</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">[('corporation_id.officer_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_corporation_manager'))]"/>
+    </record>
+
+    <record id="rule_request_corporation" model="ir.rule">
+        <field name="name">SWM Request: corporation officer scope</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">['|', ('corporation_id.officer_id', '=', user.id), ('corporation_id', '=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_corporation_manager'))]"/>
+    </record>
+
+    <record id="rule_request_admin_all" model="ir.rule">
+        <field name="name">SWM Request: administrator all</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_manager'))]"/>
+    </record>
+
+    <!-- ============ Collection staff: own assignment ============ -->
+    <record id="rule_bin_collection_staff" model="ir.rule">
+        <field name="name">SWM Bin: collection staff assignment scope</field>
+        <field name="model_id" ref="model_otm_swm_bin"/>
+        <field name="domain_force">['|', '|', '|', '|',
+            ('staff_id.user_id', '=', user.id),
+            ('id', 'in', user.env['otm.swm.staff'].sudo().search([('user_id', '=', user.id)]).bin_ids.ids),
+            ('street_id', 'in', user.env['otm.swm.staff'].sudo().search([('user_id', '=', user.id)]).street_ids.ids),
+            ('association_id', 'in', user.env['otm.swm.staff'].sudo().search([('user_id', '=', user.id)]).association_ids.ids),
+            ('corporation_id', 'in', user.env['otm.swm.staff'].sudo().search([('user_id', '=', user.id)]).corporation_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_collection_staff'))]"/>
+    </record>
+
+    <record id="rule_request_collection_staff" model="ir.rule">
+        <field name="name">SWM Request: collection staff own requests</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">[('staff_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_collection_staff'))]"/>
+    </record>
+
+    <record id="rule_request_supervisor_all" model="ir.rule">
+        <field name="name">SWM Request: supervisor all</field>
+        <field name="model_id" ref="model_otm_swm_collection_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_supervisor'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Otomater. See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <!-- Odoo 19: groups link to a res.groups.privilege, not category_id -->
+    <record id="privilege_swm" model="res.groups.privilege">
+        <field name="name">Smart Waste Management</field>
+        <field name="category_id" ref="base.module_category_operations"/>
+    </record>
+
+    <record id="group_swm_portal_member" model="res.groups">
+        <field name="name">Association Portal Member</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record id="group_swm_association_staff" model="res.groups">
+        <field name="name">Association Staff</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_swm_association_manager" model="res.groups">
+        <field name="name">Association Manager</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_association_staff'))]"/>
+    </record>
+
+    <record id="group_swm_collection_staff" model="res.groups">
+        <field name="name">Collection Staff</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_swm_supervisor" model="res.groups">
+        <field name="name">Collection Supervisor</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_collection_staff'))]"/>
+    </record>
+
+    <record id="group_swm_ward_manager" model="res.groups">
+        <field name="name">Ward Manager</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_association_manager'))]"/>
+    </record>
+
+    <record id="group_swm_zone_manager" model="res.groups">
+        <field name="name">Zone Manager</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_ward_manager'))]"/>
+    </record>
+
+    <record id="group_swm_corporation_manager" model="res.groups">
+        <field name="name">Corporation / Municipality Manager</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_zone_manager'))]"/>
+    </record>
+
+    <record id="group_swm_manager" model="res.groups">
+        <field name="name">Smart Waste Administrator</field>
+        <field name="privilege_id" ref="privilege_swm"/>
+        <field name="implied_ids" eval="[(4, ref('group_swm_corporation_manager')),
+                                         (4, ref('group_swm_supervisor'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Otomater. See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <data noupdate="1">
+        <record id="seq_swm_bin" model="ir.sequence">
+            <field name="name">Smart Waste Bin Code</field>
+            <field name="code">otm.swm.bin</field>
+            <field name="prefix">SWM-BIN-</field>
+            <field name="padding">5</field>
+        </record>
+        <record id="seq_swm_request" model="ir.sequence">
+            <field name="name">Waste Collection Request</field>
+            <field name="code">otm.swm.collection.request</field>
+            <field name="prefix">SWM-CR-</field>
+            <field name="padding">6</field>
+        </record>
+        <record id="seq_swm_complaint" model="ir.sequence">
+            <field name="name">Waste Complaint</field>
+            <field name="code">otm.swm.complaint</field>
+            <field name="prefix">SWM-CMP-</field>
+            <field name="padding">6</field>
+        </record>
+    </data>
+</odoo>

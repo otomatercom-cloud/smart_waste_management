@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_swm" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.swm</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Smart Waste" name="smart_waste_management"
+                     logo="/smart_waste_management/static/description/icon.png"
+                     groups="smart_waste_management.group_swm_manager">
+                    <block title="Fill Thresholds">
+                        <setting string="Nearly Full Threshold (%)"
+                                 help="Fill percentage at which a bin is flagged Nearly Full.">
+                            <field name="swm_threshold_nearly_full"/>
+                        </setting>
+                        <setting string="Full Threshold (%)"
+                                 help="Fill percentage at which a bin is flagged Full and a collection request is created.">
+                            <field name="swm_threshold_full"/>
+                        </setting>
+                        <setting string="Empty Threshold (%)"
+                                 help="Fill percentage at or below which a full bin is considered collected/emptied.">
+                            <field name="swm_threshold_empty"/>
+                        </setting>
+                        <setting string="Hysteresis Margin (%)"
+                                 help="Margin applied when leaving a state to prevent flapping around a threshold.">
+                            <field name="swm_hysteresis"/>
+                        </setting>
+                    </block>
+                    <block title="Sensor Data">
+                        <setting string="Duplicate Reading Window (minutes)"
+                                 help="Readings with the same fill level within this window are not stored again.">
+                            <field name="swm_dedupe_minutes"/>
+                        </setting>
+                        <setting string="Reading Retention (days)"
+                                 help="Sensor readings older than this are purged by a daily cron.">
+                            <field name="swm_reading_retention_days"/>
+                        </setting>
+                        <setting string="Device Offline After (minutes)"
+                                 help="A bin whose device has not communicated within this window is marked Offline.">
+                            <field name="swm_device_offline_minutes"/>
+                        </setting>
+                    </block>
+                    <block title="Telegram Bot">
+                        <setting string="Bot Token"
+                                 help="Token from @BotFather. Kept in system parameters; visible to administrators only.">
+                            <field name="swm_telegram_bot_token"
+                                   password="True"/>
+                        </setting>
+                        <setting string="Bot Username"
+                                 help="Bot username without @, used to build t.me deep links.">
+                            <field name="swm_telegram_bot_username"/>
+                        </setting>
+                        <setting string="Webhook Secret"
+                                 help="Random secret used in the webhook URL path.">
+                            <field name="swm_telegram_webhook_secret"
+                                   password="True"/>
+                        </setting>
+                        <setting string="Default Group Chat ID"
+                                 help="Fallback Telegram group chat for rules targeting the default group.">
+                            <field name="swm_telegram_default_group"/>
+                        </setting>
+                        <setting string="Link Token Expiry (hours)"
+                                 help="Validity period of QR / deep-link registration tokens.">
+                            <field name="swm_telegram_token_expiry_hours"/>
+                        </setting>
+                    </block>
+                    <block title="Public Bin Page">
+                        <setting string="Allow Public Complaints"
+                                 help="Enable the complaint form on the public bin QR page.">
+                            <field name="swm_public_complaints_enabled"/>
+                        </setting>
+                        <setting string="Show Fill Percentage Publicly"
+                                 help="Display the live fill percentage on the public bin QR page.">
+                            <field name="swm_public_show_fill_percent"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_swm_settings" model="ir.actions.act_window">
+        <field name="name">Smart Waste Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'smart_waste_management'}</field>
+    </record>
+
+</odoo>

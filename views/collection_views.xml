@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ Collection Request ============ -->
+    <record id="view_swm_request_list" model="ir.ui.view">
+        <field name="name">otm.swm.collection.request.list</field>
+        <field name="model">otm.swm.collection.request</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="escalation_level &gt; 0 and state not in ('done', 'cancelled')"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="bin_id"/>
+                <field name="street_id"/>
+                <field name="association_id"/>
+                <field name="staff_id"/>
+                <field name="full_detected_time"/>
+                <field name="state" widget="badge"/>
+                <field name="escalation_level"/>
+                <field name="response_hours" optional="show"/>
+                <field name="sensor_confirmed" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_request_form" model="ir.ui.view">
+        <field name="name">otm.swm.collection.request.form</field>
+        <field name="model">otm.swm.collection.request</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_accept" type="object" string="Accept"
+                            class="btn-primary"
+                            invisible="state not in ('new', 'assigned')"/>
+                    <button name="action_start" type="object"
+                            string="Start Collection" class="btn-primary"
+                            invisible="state != 'accepted'"/>
+                    <button name="action_mark_done" type="object"
+                            string="Mark Done (Manual)"
+                            confirm="Manually complete this request without sensor confirmation?"
+                            invisible="state in ('done', 'cancelled')"
+                            groups="smart_waste_management.group_swm_supervisor"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('done', 'cancelled')"
+                            groups="smart_waste_management.group_swm_supervisor"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="new,assigned,accepted,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="bin_id"/>
+                            <field name="street_id"/>
+                            <field name="association_id"/>
+                            <field name="ward_id"/>
+                            <field name="corporation_id"/>
+                            <field name="staff_id"/>
+                        </group>
+                        <group>
+                            <field name="full_detected_time"/>
+                            <field name="accepted_time"/>
+                            <field name="start_time"/>
+                            <field name="completed_time"/>
+                            <field name="response_hours"/>
+                            <field name="fill_at_request"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Escalation">
+                            <field name="escalation_level"/>
+                        </group>
+                        <group string="Completion">
+                            <field name="sensor_confirmed"/>
+                            <field name="manual_completion"/>
+                            <field name="manual_completion_note"
+                                   invisible="not manual_completion"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_request_kanban" model="ir.ui.view">
+        <field name="name">otm.swm.collection.request.kanban</field>
+        <field name="model">otm.swm.collection.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="p-2">
+                            <div class="d-flex justify-content-between">
+                                <strong><field name="name"/></strong>
+                                <field name="escalation_level"/>
+                            </div>
+                            <div><field name="bin_id"/></div>
+                            <div class="text-muted">
+                                <field name="street_id"/>
+                            </div>
+                            <div class="text-muted small">
+                                Full since:
+                                <field name="full_detected_time"/>
+                            </div>
+                            <div><field name="staff_id" widget="many2one_avatar_user"/></div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_swm_request_search" model="ir.ui.view">
+        <field name="name">otm.swm.collection.request.search</field>
+        <field name="model">otm.swm.collection.request</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="bin_id"/>
+                <field name="bin_code"/>
+                <field name="staff_id"/>
+                <field name="association_id"/>
+                <filter string="Open" name="f_open"
+                        domain="[('state', 'in', ('new', 'assigned', 'accepted', 'in_progress'))]"/>
+                <filter string="Escalated" name="f_escalated"
+                        domain="[('escalation_level', '&gt;', 0), ('state', 'not in', ('done', 'cancelled'))]"/>
+                <filter string="Done" name="f_done"
+                        domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter string="State" name="gb_state"
+                        context="{'group_by': 'state'}"/>
+                <filter string="Staff" name="gb_staff"
+                        context="{'group_by': 'staff_id'}"/>
+                <filter string="Association" name="gb_assoc"
+                        context="{'group_by': 'association_id'}"/>
+                <filter string="Full Detected" name="gb_date"
+                        context="{'group_by': 'full_detected_time:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_request" model="ir.actions.act_window">
+        <field name="name">Collection Requests</field>
+        <field name="res_model">otm.swm.collection.request</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_f_open': 1}</field>
+    </record>
+
+    <!-- ============ Collection History ============ -->
+    <record id="view_swm_history_list" model="ir.ui.view">
+        <field name="name">otm.swm.collection.history.list</field>
+        <field name="model">otm.swm.collection.history</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false"
+                  decoration-danger="sla_status == 'delayed'"
+                  decoration-success="sla_status == 'on_time'">
+                <field name="bin_code"/>
+                <field name="bin_id" optional="hide"/>
+                <field name="street_id"/>
+                <field name="association_id"/>
+                <field name="staff_id"/>
+                <field name="full_detected_time"/>
+                <field name="completed_time"/>
+                <field name="response_hours"/>
+                <field name="escalation_count"/>
+                <field name="sla_status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_history_form" model="ir.ui.view">
+        <field name="name">otm.swm.collection.history.form</field>
+        <field name="model">otm.swm.collection.history</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="bin_id"/>
+                            <field name="bin_code"/>
+                            <field name="street_id"/>
+                            <field name="association_id"/>
+                            <field name="corporation_id"/>
+                            <field name="request_id"/>
+                            <field name="staff_id"/>
+                        </group>
+                        <group>
+                            <field name="full_detected_time"/>
+                            <field name="request_time"/>
+                            <field name="accepted_time"/>
+                            <field name="start_time"/>
+                            <field name="completed_time"/>
+                            <field name="sensor_confirmed_time"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="response_hours"/>
+                            <field name="escalation_count"/>
+                            <field name="sla_status"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_history_graph" model="ir.ui.view">
+        <field name="name">otm.swm.collection.history.graph</field>
+        <field name="model">otm.swm.collection.history</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="association_id"/>
+                <field name="response_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_swm_history_search" model="ir.ui.view">
+        <field name="name">otm.swm.collection.history.search</field>
+        <field name="model">otm.swm.collection.history</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="bin_code"/>
+                <field name="bin_id"/>
+                <field name="association_id"/>
+                <field name="staff_id"/>
+                <filter string="Delayed" name="f_delayed"
+                        domain="[('sla_status', '=', 'delayed')]"/>
+                <filter string="On Time" name="f_ontime"
+                        domain="[('sla_status', '=', 'on_time')]"/>
+                <separator/>
+                <filter string="Association" name="gb_assoc"
+                        context="{'group_by': 'association_id'}"/>
+                <filter string="Staff" name="gb_staff"
+                        context="{'group_by': 'staff_id'}"/>
+                <filter string="SLA" name="gb_sla"
+                        context="{'group_by': 'sla_status'}"/>
+                <filter string="Completed" name="gb_date"
+                        context="{'group_by': 'completed_time:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_history" model="ir.actions.act_window">
+        <field name="name">Collection History</field>
+        <field name="res_model">otm.swm.collection.history</field>
+        <field name="view_mode">list,graph,form</field>
+    </record>
+
+</odoo>

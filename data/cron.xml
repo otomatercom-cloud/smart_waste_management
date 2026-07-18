@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Otomater. See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <data noupdate="1">
+        <record id="cron_swm_check_delays" model="ir.cron">
+            <field name="name">SWM: Collection Delay / Escalation Check</field>
+            <field name="model_id" ref="model_otm_swm_collection_request"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_check_delays()</field>
+            <field name="interval_number">10</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="cron_swm_device_offline" model="ir.cron">
+            <field name="name">SWM: Device Offline Detection</field>
+            <field name="model_id" ref="model_otm_swm_bin"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_check_device_offline()</field>
+            <field name="interval_number">15</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="cron_swm_purge_readings" model="ir.cron">
+            <field name="name">SWM: Purge Old Sensor Readings</field>
+            <field name="model_id" ref="model_otm_swm_bin"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_purge_old_readings()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+        <record id="cron_swm_purge_tg_tokens" model="ir.cron">
+            <field name="name">SWM: Purge Expired Telegram Tokens</field>
+            <field name="model_id" ref="model_otm_swm_telegram_token"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_purge_expired()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

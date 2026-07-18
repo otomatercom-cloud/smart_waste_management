@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Standalone, dependency-free public page: loads fast on mobile from a
+         QR scan and works without any website/asset bundles. -->
+    <template id="public_bin_page" name="Smart Waste: Public Bin Status">
+        <t t-set="status_labels"
+           t-value="dict(bin._fields['status'].selection)"/>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1"/>
+                <meta name="robots" content="noindex"/>
+                <title>Bin <t t-out="bin.code"/> — Status</title>
+                <style>
+                    :root {
+                        --swm-ok: #28a745;
+                        --swm-warn: #ffc107;
+                        --swm-danger: #dc3545;
+                        --swm-info: #17a2b8;
+                        --swm-muted: #6c757d;
+                    }
+                    * { box-sizing: border-box; }
+                    body {
+                        margin: 0;
+                        font-family: system-ui, -apple-system, "Segoe UI",
+                            Roboto, sans-serif;
+                        background: #f4f6f8;
+                        color: #212529;
+                    }
+                    .swm-wrap {
+                        max-width: 480px;
+                        margin: 0 auto;
+                        padding: 16px;
+                    }
+                    .swm-card {
+                        background: #fff;
+                        border-radius: 12px;
+                        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+                        padding: 16px;
+                        margin-bottom: 16px;
+                    }
+                    .swm-code { font-size: 1.4rem; font-weight: 700; }
+                    .swm-badge {
+                        display: inline-block;
+                        padding: 4px 12px;
+                        border-radius: 999px;
+                        color: #fff;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                    }
+                    .swm-b-available, .swm-b-collected {
+                        background: var(--swm-ok); }
+                    .swm-b-nearly_full { background: var(--swm-warn);
+                        color: #212529; }
+                    .swm-b-full, .swm-b-collection_pending {
+                        background: var(--swm-danger); }
+                    .swm-b-collection_in_progress {
+                        background: var(--swm-info); }
+                    .swm-b-offline, .swm-b-maintenance {
+                        background: var(--swm-muted); }
+                    .swm-meta { color: #6c757d; font-size: 0.9rem;
+                        margin-top: 4px; }
+                    .swm-progress {
+                        background: #e9ecef;
+                        border-radius: 999px;
+                        height: 14px;
+                        overflow: hidden;
+                        margin: 12px 0 4px;
+                    }
+                    .swm-progress > div {
+                        height: 100%;
+                        border-radius: 999px;
+                        background: var(--swm-ok);
+                    }
+                    .swm-progress > div.warn {
+                        background: var(--swm-warn); }
+                    .swm-progress > div.danger {
+                        background: var(--swm-danger); }
+                    label { display: block; font-size: 0.9rem;
+                        font-weight: 600; margin: 10px 0 4px; }
+                    select, textarea, input[type="text"] {
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid #ced4da;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                    }
+                    button {
+                        margin-top: 12px;
+                        width: 100%;
+                        padding: 12px;
+                        border: 0;
+                        border-radius: 8px;
+                        background: #714b67;
+                        color: #fff;
+                        font-size: 1rem;
+                        font-weight: 600;
+                    }
+                    .swm-ok-box {
+                        background: #d4edda;
+                        color: #155724;
+                        border-radius: 8px;
+                        padding: 12px;
+                        margin-bottom: 16px;
+                    }
+                    .swm-hp { position: absolute; left: -9999px;
+                        opacity: 0; height: 0; overflow: hidden; }
+                    .swm-footer { text-align: center; color: #adb5bd;
+                        font-size: 0.8rem; margin: 16px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="swm-wrap">
+                    <div class="swm-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="swm-code"
+                                  t-out="bin.code"/>
+                            <span t-attf-class="swm-badge swm-b-{{bin.status}}"
+                                  t-out="status_labels.get(bin.status)"/>
+                        </div>
+                        <div class="swm-meta">
+                            <t t-out="bin.name"/>
+                            <t t-if="bin.street_id"> ·
+                                <t t-out="bin.street_id.name"/></t>
+                            <t t-if="bin.association_id"> ·
+                                <t t-out="bin.association_id.name"/></t>
+                        </div>
+                        <t t-if="show_fill">
+                            <div class="swm-progress">
+                                <div t-attf-class="{{'danger' if bin.fill_percentage &gt;= 80 else ('warn' if bin.fill_percentage &gt;= 50 else '')}}"
+                                     t-attf-style="width: {{min(100, max(0, round(bin.fill_percentage)))}}%"/>
+                            </div>
+                            <div class="swm-meta">
+                                <t t-out="round(bin.fill_percentage)"/>% full
+                                <t t-if="bin.last_reading_time">
+                                    · updated
+                                    <t t-out="bin.last_reading_time"
+                                       t-options="{'widget': 'datetime'}"/>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div t-if="submitted" class="swm-ok-box">
+                        Thank you! Your report has been recorded and will be
+                        reviewed by the association.
+                    </div>
+
+                    <div t-if="complaints_enabled" class="swm-card">
+                        <strong>Report a Problem</strong>
+                        <form method="post"
+                              t-attf-action="/waste/bin/{{bin.code}}/complaint">
+                            <input type="hidden" name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+                            <!-- Honeypot: humans never see or fill this -->
+                            <div class="swm-hp" aria-hidden="true">
+                                <label for="website">Website</label>
+                                <input type="text" name="website"
+                                       id="website" tabindex="-1"
+                                       autocomplete="off"/>
+                            </div>
+                            <label for="complaint_type">Problem Type</label>
+                            <select name="complaint_type"
+                                    id="complaint_type">
+                                <t t-foreach="complaint_types" t-as="ct">
+                                    <option t-att-value="ct[0]"
+                                            t-out="ct[1]"/>
+                                </t>
+                            </select>
+                            <label for="description">Description</label>
+                            <textarea name="description" id="description"
+                                      rows="3"
+                                      placeholder="Describe the issue (optional)"/>
+                            <label for="reported_by">Your Name (optional)</label>
+                            <input type="text" name="reported_by"
+                                   id="reported_by"/>
+                            <button type="submit">Submit Report</button>
+                        </form>
+                    </div>
+
+                    <div class="swm-footer">
+                        Smart Waste Management · Otomater
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+</odoo>

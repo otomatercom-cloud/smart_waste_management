@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_swm_tg_token_list" model="ir.ui.view">
+        <field name="name">otm.swm.telegram.token.list</field>
+        <field name="model">otm.swm.telegram.token</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false"
+                  decoration-success="used"
+                  decoration-muted="not used">
+                <field name="create_date"/>
+                <field name="member_id"/>
+                <field name="expires_at"/>
+                <field name="used" widget="boolean_toggle"/>
+                <field name="used_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_tg_token_form" model="ir.ui.view">
+        <field name="name">otm.swm.telegram.token.form</field>
+        <field name="model">otm.swm.telegram.token</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="member_id"/>
+                            <field name="create_date"/>
+                            <field name="expires_at"/>
+                        </group>
+                        <group>
+                            <field name="used"/>
+                            <field name="used_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_tg_token_search" model="ir.ui.view">
+        <field name="name">otm.swm.telegram.token.search</field>
+        <field name="model">otm.swm.telegram.token</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id"/>
+                <filter string="Used" name="f_used"
+                        domain="[('used', '=', True)]"/>
+                <filter string="Pending" name="f_pending"
+                        domain="[('used', '=', False)]"/>
+                <separator/>
+                <filter string="Member" name="gb_member"
+                        context="{'group_by': 'member_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_tg_token" model="ir.actions.act_window">
+        <field name="name">Telegram Link Tokens</field>
+        <field name="res_model">otm.swm.telegram.token</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

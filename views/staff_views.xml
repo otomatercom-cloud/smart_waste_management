@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_swm_staff_list" model="ir.ui.view">
+        <field name="name">otm.swm.staff.list</field>
+        <field name="model">otm.swm.staff</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="phone"/>
+                <field name="is_supervisor" widget="boolean_toggle"/>
+                <field name="supervisor_id"/>
+                <field name="open_request_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_staff_form" model="ir.ui.view">
+        <field name="name">otm.swm.staff.form</field>
+        <field name="model">otm.swm.staff</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_open_requests" type="object"
+                                class="oe_stat_button" icon="fa-tasks">
+                            <field name="open_request_count" widget="statinfo"
+                                   string="Open Requests"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Staff Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="phone"/>
+                            <field name="is_supervisor"/>
+                            <field name="supervisor_id"
+                                   invisible="is_supervisor"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Telegram">
+                            <field name="telegram_username"/>
+                            <field name="telegram_chat_id"
+                                   groups="smart_waste_management.group_swm_manager"/>
+                        </group>
+                    </group>
+                    <group string="Assignment Scope">
+                        <field name="corporation_ids" widget="many2many_tags"/>
+                        <field name="ward_ids" widget="many2many_tags"/>
+                        <field name="association_ids" widget="many2many_tags"/>
+                        <field name="street_ids" widget="many2many_tags"/>
+                        <field name="bin_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_staff_search" model="ir.ui.view">
+        <field name="name">otm.swm.staff.search</field>
+        <field name="model">otm.swm.staff</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="phone"/>
+                <filter string="Supervisors" name="f_supervisor"
+                        domain="[('is_supervisor', '=', True)]"/>
+                <filter string="Field Staff" name="f_staff"
+                        domain="[('is_supervisor', '=', False)]"/>
+                <separator/>
+                <filter string="Supervisor" name="gb_supervisor"
+                        context="{'group_by': 'supervisor_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_staff" model="ir.actions.act_window">
+        <field name="name">Collection Staff</field>
+        <field name="res_model">otm.swm.staff</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

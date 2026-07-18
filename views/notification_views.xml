@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ Notification Template ============ -->
+    <record id="view_swm_tmpl_list" model="ir.ui.view">
+        <field name="name">otm.swm.notification.template.list</field>
+        <field name="model">otm.swm.notification.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="body"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_tmpl_form" model="ir.ui.view">
+        <field name="name">otm.swm.notification.template.form</field>
+        <field name="model">otm.swm.notification.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"
+                                   placeholder="Template Name"/></h1>
+                    </div>
+                    <group>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Message Body">
+                        <field name="body" nolabel="1"
+                               placeholder="🗑️ Bin {bin_code} on {street} is FULL ({fill}%)."/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        Available placeholders:
+                        <code>{bin_code}</code> <code>{street}</code>
+                        <code>{association}</code> <code>{fill}</code>
+                        <code>{status}</code> <code>{time}</code>
+                        <code>{full_since}</code> <code>{request}</code>
+                        <code>{staff}</code> <code>{response_hours}</code>
+                        <code>{link}</code>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_swm_tmpl" model="ir.actions.act_window">
+        <field name="name">Notification Templates</field>
+        <field name="res_model">otm.swm.notification.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============ Notification Rule ============ -->
+    <record id="view_swm_rule_list" model="ir.ui.view">
+        <field name="name">otm.swm.notification.rule.list</field>
+        <field name="model">otm.swm.notification.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="trigger_type"/>
+                <field name="delay_number"/>
+                <field name="delay_unit"/>
+                <field name="recipient_type"/>
+                <field name="escalation_level"/>
+                <field name="channel_telegram" widget="boolean_toggle"/>
+                <field name="channel_internal" widget="boolean_toggle"
+                       optional="show"/>
+                <field name="channel_email" widget="boolean_toggle"
+                       optional="show"/>
+                <field name="recurring" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_rule_form" model="ir.ui.view">
+        <field name="name">otm.swm.notification.rule.form</field>
+        <field name="model">otm.swm.notification.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Rule Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Trigger">
+                            <field name="trigger_type"/>
+                            <field name="delay_number"/>
+                            <field name="delay_unit"/>
+                            <field name="escalation_level"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Recipient">
+                            <field name="recipient_type"/>
+                            <field name="custom_chat_id"
+                                   invisible="recipient_type != 'custom_chat'"
+                                   required="recipient_type == 'custom_chat'"/>
+                            <field name="template_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Channels">
+                            <field name="channel_telegram"/>
+                            <field name="channel_internal"/>
+                            <field name="channel_email"/>
+                        </group>
+                        <group string="Recurrence">
+                            <field name="recurring"/>
+                            <field name="recur_every_hours"
+                                   invisible="not recurring"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_rule_search" model="ir.ui.view">
+        <field name="name">otm.swm.notification.rule.search</field>
+        <field name="model">otm.swm.notification.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter string="Escalations" name="f_escalation"
+                        domain="[('escalation_level', '&gt;', 0)]"/>
+                <filter string="Archived" name="f_inactive"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Trigger" name="gb_trigger"
+                        context="{'group_by': 'trigger_type'}"/>
+                <filter string="Recipient" name="gb_recipient"
+                        context="{'group_by': 'recipient_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_rule" model="ir.actions.act_window">
+        <field name="name">Notification Rules</field>
+        <field name="res_model">otm.swm.notification.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============ Notification Log ============ -->
+    <record id="view_swm_notif_log_list" model="ir.ui.view">
+        <field name="name">otm.swm.notification.log.list</field>
+        <field name="model">otm.swm.notification.log</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false"
+                  decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'skipped'">
+                <field name="create_date"/>
+                <field name="rule_id"/>
+                <field name="trigger_type"/>
+                <field name="bin_id"/>
+                <field name="request_id" optional="show"/>
+                <field name="channel"/>
+                <field name="recipient"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_notif_log_form" model="ir.ui.view">
+        <field name="name">otm.swm.notification.log.form</field>
+        <field name="model">otm.swm.notification.log</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="rule_id"/>
+                            <field name="trigger_type"/>
+                            <field name="channel"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="bin_id"/>
+                            <field name="request_id"/>
+                            <field name="recipient"/>
+                        </group>
+                    </group>
+                    <group string="Message">
+                        <field name="message" nolabel="1"/>
+                    </group>
+                    <group string="External Response / Error">
+                        <field name="detail" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_notif_log_search" model="ir.ui.view">
+        <field name="name">otm.swm.notification.log.search</field>
+        <field name="model">otm.swm.notification.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="bin_id"/>
+                <field name="recipient"/>
+                <filter string="Sent" name="f_sent"
+                        domain="[('state', '=', 'sent')]"/>
+                <filter string="Failed" name="f_failed"
+                        domain="[('state', '=', 'failed')]"/>
+                <filter string="Skipped" name="f_skipped"
+                        domain="[('state', '=', 'skipped')]"/>
+                <separator/>
+                <filter string="Trigger" name="gb_trigger"
+                        context="{'group_by': 'trigger_type'}"/>
+                <filter string="Channel" name="gb_channel"
+                        context="{'group_by': 'channel'}"/>
+                <filter string="State" name="gb_state"
+                        context="{'group_by': 'state'}"/>
+                <filter string="Date" name="gb_date"
+                        context="{'group_by': 'create_date:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_notif_log" model="ir.actions.act_window">
+        <field name="name">Notification Logs</field>
+        <field name="res_model">otm.swm.notification.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

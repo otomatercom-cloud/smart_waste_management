@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ Geography ============ -->
+    <record id="demo_corp_kochi" model="otm.swm.corporation">
+        <field name="name">Kochi Municipal Corporation</field>
+        <field name="code">KMC</field>
+        <field name="body_type">corporation</field>
+        <field name="district">Ernakulam</field>
+    </record>
+
+    <record id="demo_zone_central" model="otm.swm.zone">
+        <field name="name">Central Zone</field>
+        <field name="code">KMC-CZ</field>
+        <field name="corporation_id" ref="demo_corp_kochi"/>
+    </record>
+
+    <record id="demo_ward_12" model="otm.swm.ward">
+        <field name="name">Kadavanthra</field>
+        <field name="ward_number">12</field>
+        <field name="zone_id" ref="demo_zone_central"/>
+        <field name="corporation_id" ref="demo_corp_kochi"/>
+    </record>
+
+    <!-- ============ Association ============ -->
+    <record id="demo_partner_president" model="res.partner">
+        <field name="name">Suresh Menon</field>
+        <field name="phone">+91 98470 11111</field>
+    </record>
+
+    <record id="demo_assoc_green" model="otm.swm.association">
+        <field name="name">Green Valley Residents Association</field>
+        <field name="code">GVRA</field>
+        <field name="corporation_id" ref="demo_corp_kochi"/>
+        <field name="zone_id" ref="demo_zone_central"/>
+        <field name="ward_id" ref="demo_ward_12"/>
+        <field name="president_id" ref="demo_partner_president"/>
+        <field name="address">Green Valley, Kadavanthra, Kochi</field>
+    </record>
+
+    <!-- ============ Streets ============ -->
+    <record id="demo_street_rose" model="otm.swm.street">
+        <field name="name">Rose Garden Street</field>
+        <field name="code">GVRA-ST1</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+    </record>
+
+    <record id="demo_street_lotus" model="otm.swm.street">
+        <field name="name">Lotus Lane</field>
+        <field name="code">GVRA-ST2</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+    </record>
+
+    <!-- ============ Portal users + members ============ -->
+    <record id="demo_user_member1" model="res.users">
+        <field name="name">Anita Varma</field>
+        <field name="login">swm_member1@example.com</field>
+        <field name="email">swm_member1@example.com</field>
+        <field name="group_ids" eval="[
+            (4, ref('base.group_portal')),
+            (4, ref('smart_waste_management.group_swm_portal_member'))]"/>
+    </record>
+
+    <record id="demo_member_anita" model="otm.swm.association.member">
+        <field name="name">Anita Varma</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_rose"/>
+        <field name="house_no">GV-14</field>
+        <field name="phone">+91 98470 22222</field>
+        <field name="user_id" ref="demo_user_member1"/>
+    </record>
+
+    <record id="demo_member_rahul" model="otm.swm.association.member">
+        <field name="name">Rahul Nair</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_rose"/>
+        <field name="house_no">GV-07</field>
+        <field name="phone">+91 98470 33333</field>
+    </record>
+
+    <record id="demo_member_fathima" model="otm.swm.association.member">
+        <field name="name">Fathima Beevi</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_lotus"/>
+        <field name="house_no">GV-21</field>
+        <field name="phone">+91 98470 44444</field>
+    </record>
+
+    <!-- ============ Collection staff ============ -->
+    <record id="demo_user_staff1" model="res.users">
+        <field name="name">Biju Kumar</field>
+        <field name="login">swm_staff1@example.com</field>
+        <field name="email">swm_staff1@example.com</field>
+        <field name="group_ids" eval="[
+            (4, ref('smart_waste_management.group_swm_collection_staff'))]"/>
+    </record>
+
+    <record id="demo_user_supervisor" model="res.users">
+        <field name="name">Latha Krishnan</field>
+        <field name="login">swm_supervisor@example.com</field>
+        <field name="email">swm_supervisor@example.com</field>
+        <field name="group_ids" eval="[
+            (4, ref('smart_waste_management.group_swm_supervisor'))]"/>
+    </record>
+
+    <record id="demo_staff_supervisor" model="otm.swm.staff">
+        <field name="name">Latha Krishnan</field>
+        <field name="user_id" ref="demo_user_supervisor"/>
+        <field name="phone">+91 98470 55555</field>
+        <field name="is_supervisor" eval="True"/>
+        <field name="corporation_ids"
+               eval="[(4, ref('demo_corp_kochi'))]"/>
+    </record>
+
+    <record id="demo_staff_biju" model="otm.swm.staff">
+        <field name="name">Biju Kumar</field>
+        <field name="user_id" ref="demo_user_staff1"/>
+        <field name="phone">+91 98470 66666</field>
+        <field name="supervisor_id" ref="demo_staff_supervisor"/>
+        <field name="association_ids"
+               eval="[(4, ref('demo_assoc_green'))]"/>
+    </record>
+
+    <!-- ============ Bins (varied statuses) ============ -->
+    <record id="demo_bin_1" model="otm.swm.bin">
+        <field name="name">Rose Garden North</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_rose"/>
+        <field name="bin_height_cm">100</field>
+        <field name="capacity_liters">240</field>
+        <field name="device_id">ESP32-DEMO-001</field>
+        <field name="status">available</field>
+        <field name="fill_percentage">22</field>
+        <field name="device_online" eval="True"/>
+        <field name="staff_id" ref="demo_staff_biju"/>
+    </record>
+
+    <record id="demo_bin_2" model="otm.swm.bin">
+        <field name="name">Rose Garden South</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_rose"/>
+        <field name="bin_height_cm">100</field>
+        <field name="capacity_liters">240</field>
+        <field name="device_id">ESP32-DEMO-002</field>
+        <field name="status">nearly_full</field>
+        <field name="fill_percentage">84</field>
+        <field name="device_online" eval="True"/>
+        <field name="staff_id" ref="demo_staff_biju"/>
+    </record>
+
+    <record id="demo_bin_3" model="otm.swm.bin">
+        <field name="name">Lotus Lane Corner</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_lotus"/>
+        <field name="bin_height_cm">120</field>
+        <field name="capacity_liters">360</field>
+        <field name="device_id">ESP32-DEMO-003</field>
+        <field name="status">collection_pending</field>
+        <field name="fill_percentage">97</field>
+        <field name="device_online" eval="True"/>
+        <field name="staff_id" ref="demo_staff_biju"/>
+    </record>
+
+    <record id="demo_bin_4" model="otm.swm.bin">
+        <field name="name">Lotus Lane Park</field>
+        <field name="association_id" ref="demo_assoc_green"/>
+        <field name="street_id" ref="demo_street_lotus"/>
+        <field name="bin_height_cm">100</field>
+        <field name="capacity_liters">240</field>
+        <field name="device_id">ESP32-DEMO-004</field>
+        <field name="status">offline</field>
+        <field name="fill_percentage">45</field>
+        <field name="device_online" eval="False"/>
+    </record>
+
+    <!-- Open collection request matching demo_bin_3 -->
+    <record id="demo_request_1" model="otm.swm.collection.request">
+        <field name="bin_id" ref="demo_bin_3"/>
+        <field name="staff_id" ref="demo_staff_biju"/>
+        <field name="state">assigned</field>
+        <field name="full_detected_time"
+               eval="(DateTime.now() - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="fill_at_request">97</field>
+    </record>
+
+    <!-- A complaint -->
+    <record id="demo_complaint_1" model="otm.swm.complaint">
+        <field name="bin_id" ref="demo_bin_2"/>
+        <field name="complaint_type">smell</field>
+        <field name="description">Bad smell near the bin in the evenings.</field>
+        <field name="reported_by_name">Rahul Nair</field>
+    </record>
+
+</odoo>

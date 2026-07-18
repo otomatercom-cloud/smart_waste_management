@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============ Residential Association ============ -->
+    <record id="view_swm_association_list" model="ir.ui.view">
+        <field name="name">otm.swm.association.list</field>
+        <field name="model">otm.swm.association</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="corporation_id"/>
+                <field name="ward_id"/>
+                <field name="manager_user_id"/>
+                <field name="member_count"/>
+                <field name="bin_count"/>
+                <field name="full_bin_count"
+                       decoration-danger="full_bin_count &gt; 0"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_association_form" model="ir.ui.view">
+        <field name="name">otm.swm.association.form</field>
+        <field name="model">otm.swm.association</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_streets" type="object"
+                                class="oe_stat_button" icon="fa-road">
+                            <field name="street_count" widget="statinfo"
+                                   string="Streets"/>
+                        </button>
+                        <button name="action_view_bins" type="object"
+                                class="oe_stat_button" icon="fa-trash-o">
+                            <field name="bin_count" widget="statinfo"
+                                   string="Bins"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"
+                                   placeholder="Association Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="corporation_id"/>
+                            <field name="zone_id"/>
+                            <field name="ward_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="president_id"/>
+                            <field name="secretary_id"/>
+                            <field name="manager_user_id"/>
+                            <field name="phone"/>
+                            <field name="email"/>
+                            <field name="telegram_group_chat_id"
+                                   groups="smart_waste_management.group_swm_manager"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="address"/>
+                    </group>
+                    <notebook>
+                        <page string="Members" name="members">
+                            <field name="member_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="street_id"/>
+                                    <field name="house_no"/>
+                                    <field name="phone"/>
+                                    <field name="user_id"/>
+                                    <field name="telegram_connected"
+                                           widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Streets" name="streets">
+                            <field name="street_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="bin_count"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_association_search" model="ir.ui.view">
+        <field name="name">otm.swm.association.search</field>
+        <field name="model">otm.swm.association</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="corporation_id"/>
+                <field name="ward_id"/>
+                <filter string="Archived" name="f_inactive"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Corporation" name="gb_corp"
+                        context="{'group_by': 'corporation_id'}"/>
+                <filter string="Ward" name="gb_ward"
+                        context="{'group_by': 'ward_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_association" model="ir.actions.act_window">
+        <field name="name">Associations</field>
+        <field name="res_model">otm.swm.association</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============ Association Member ============ -->
+    <record id="view_swm_member_list" model="ir.ui.view">
+        <field name="name">otm.swm.association.member.list</field>
+        <field name="model">otm.swm.association.member</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="association_id"/>
+                <field name="street_id"/>
+                <field name="house_no" optional="show"/>
+                <field name="phone" optional="show"/>
+                <field name="user_id"/>
+                <field name="telegram_connected" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_member_form" model="ir.ui.view">
+        <field name="name">otm.swm.association.member.form</field>
+        <field name="model">otm.swm.association.member</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_disconnect_telegram" type="object"
+                            string="Disconnect Telegram"
+                            invisible="not telegram_connected"
+                            confirm="Disconnect this member from Telegram?"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Member Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="association_id"/>
+                            <field name="street_id"/>
+                            <field name="house_no"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="phone"/>
+                            <field name="email"/>
+                            <field name="partner_id"/>
+                            <field name="user_id"/>
+                        </group>
+                    </group>
+                    <group string="Telegram">
+                        <group>
+                            <field name="telegram_connected"/>
+                            <field name="telegram_username"/>
+                            <field name="telegram_connected_on"/>
+                        </group>
+                        <group groups="smart_waste_management.group_swm_manager">
+                            <field name="telegram_chat_id"/>
+                            <field name="telegram_user_id"/>
+                        </group>
+                    </group>
+                    <group string="Notification Preferences">
+                        <group>
+                            <field name="notify_bin_full"/>
+                            <field name="notify_delayed"/>
+                        </group>
+                        <group>
+                            <field name="notify_collected"/>
+                            <field name="notify_available"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_member_search" model="ir.ui.view">
+        <field name="name">otm.swm.association.member.search</field>
+        <field name="model">otm.swm.association.member</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="association_id"/>
+                <field name="street_id"/>
+                <field name="phone"/>
+                <filter string="Telegram Connected" name="f_tg"
+                        domain="[('telegram_connected', '=', True)]"/>
+                <filter string="Not Connected" name="f_no_tg"
+                        domain="[('telegram_connected', '=', False)]"/>
+                <separator/>
+                <filter string="Association" name="gb_assoc"
+                        context="{'group_by': 'association_id'}"/>
+                <filter string="Street" name="gb_street"
+                        context="{'group_by': 'street_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_member" model="ir.actions.act_window">
+        <field name="name">Association Members</field>
+        <field name="res_model">otm.swm.association.member</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

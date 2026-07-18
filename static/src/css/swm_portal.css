@@ -1,0 +1,150 @@
+/* Part of Otomater. See LICENSE file for full copyright and licensing
+   details. Plain CSS only (no SCSS) per Odoo 19 asset rules. */
+
+/* KPI tiles */
+.swm-portal .swm-kpi {
+    background: #ffffff;
+    border-radius: 10px;
+    text-align: center;
+    padding: 10px 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-top: 4px solid #adb5bd;
+}
+
+.swm-portal .swm-kpi-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.swm-portal .swm-kpi-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.swm-portal .swm-kpi-total { border-top-color: #714b67; }
+.swm-portal .swm-kpi-ok { border-top-color: #28a745; }
+.swm-portal .swm-kpi-warn { border-top-color: #ffc107; }
+.swm-portal .swm-kpi-danger { border-top-color: #dc3545; }
+.swm-portal .swm-kpi-info { border-top-color: #17a2b8; }
+.swm-portal .swm-kpi-muted { border-top-color: #6c757d; }
+
+/* Bin cards */
+.swm-portal .swm-bin-card {
+    border: 0;
+    border-left: 5px solid #adb5bd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.swm-portal .swm-status-available,
+.swm-portal .swm-status-collected {
+    border-left-color: #28a745;
+}
+
+.swm-portal .swm-status-nearly_full {
+    border-left-color: #ffc107;
+}
+
+.swm-portal .swm-status-full,
+.swm-portal .swm-status-collection_pending {
+    border-left-color: #dc3545;
+}
+
+.swm-portal .swm-status-collection_in_progress {
+    border-left-color: #17a2b8;
+}
+
+.swm-portal .swm-status-offline,
+.swm-portal .swm-status-maintenance {
+    border-left-color: #6c757d;
+}
+
+/* Status badges */
+.swm-portal .swm-badge-available,
+.swm-portal .swm-badge-collected,
+.swm-portal .swm-badge-done {
+    background: #28a745;
+    color: #ffffff;
+}
+
+.swm-portal .swm-badge-nearly_full {
+    background: #ffc107;
+    color: #212529;
+}
+
+.swm-portal .swm-badge-full,
+.swm-portal .swm-badge-collection_pending {
+    background: #dc3545;
+    color: #ffffff;
+}
+
+.swm-portal .swm-badge-collection_in_progress,
+.swm-portal .swm-badge-in_progress {
+    background: #17a2b8;
+    color: #ffffff;
+}
+
+.swm-portal .swm-badge-offline,
+.swm-portal .swm-badge-maintenance,
+.swm-portal .swm-badge-cancelled {
+    background: #6c757d;
+    color: #ffffff;
+}
+
+.swm-portal .swm-badge-new,
+.swm-portal .swm-badge-assigned {
+    background: #0d6efd;
+    color: #ffffff;
+}
+
+.swm-portal .swm-badge-accepted {
+    background: #6610f2;
+    color: #ffffff;
+}
+
+/* Progress bars */
+.swm-portal .swm-progress {
+    height: 10px;
+    border-radius: 999px;
+}
+
+.swm-portal .swm-bar-available,
+.swm-portal .swm-bar-collected {
+    background-color: #28a745;
+}
+
+.swm-portal .swm-bar-nearly_full {
+    background-color: #ffc107;
+}
+
+.swm-portal .swm-bar-full,
+.swm-portal .swm-bar-collection_pending,
+.swm-portal .swm-bar-collection_in_progress {
+    background-color: #dc3545;
+}
+
+.swm-portal .swm-bar-offline,
+.swm-portal .swm-bar-maintenance {
+    background-color: #6c757d;
+}
+
+/* Staff request cards */
+.swm-portal .swm-req-card {
+    border: 0;
+    border-left: 5px solid #0d6efd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.swm-portal .swm-req-escalated {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+/* QR image */
+.swm-portal .swm-qr {
+    background: #ffffff;
+    max-width: 240px;
+    width: 100%;
+}
