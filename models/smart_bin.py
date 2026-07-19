@@ -86,6 +86,11 @@ class SwmBin(models.Model):
         BIN_STATUSES, default="available", required=True, tracking=True,
         index=True)
     last_status_change = fields.Datetime(readonly=True)
+    pending_status_candidate = fields.Char(
+        readonly=True, copy=False,
+        help="Candidate critical status awaiting confirmation by "
+             "consecutive sensor readings (noise debounce).")
+    pending_status_count = fields.Integer(readonly=True, copy=False)
     full_since = fields.Datetime(readonly=True, copy=False)
     last_emptied_time = fields.Datetime(readonly=True, copy=False)
     collection_requested_time = fields.Datetime(readonly=True, copy=False)
@@ -247,18 +252,32 @@ class SwmBin(models.Model):
         if signal_strength is not None:
             comm_vals["signal_strength"] = signal_strength
 
-        # Duplicate suppression: same values inside the dedupe window only
-        # refresh the communication timestamp.
+        # Storage policy — three independent guards decide whether this
+        # reading earns a DB row (the live status engine always runs):
+        # 1. identical values inside the dedupe window are never stored
+        # 2. rows are throttled to one per min_storage_seconds ...
+        # 3. ... unless the fill moved by at least storage_delta %,
+        #    which is always stored immediately (captures real events).
         dedupe_min = Settings.swm_get_int("dedupe_minutes", 10)
+        min_storage_s = Settings.swm_get_int("min_storage_seconds", 60)
+        storage_delta = Settings.swm_get_int("storage_delta", 5)
         last = self.env["otm.swm.sensor.reading"].search(
             [("bin_id", "=", self.id)], order="id desc", limit=1)
-        duplicate = bool(
+        elapsed = ((now - last.create_date).total_seconds()
+                   if last and last.create_date else None)
+        delta = (abs((last.fill_percentage or 0) - fill_percentage)
+                 if last else None)
+        identical = bool(
             last and dedupe_min > 0
-            and abs((last.fill_percentage or 0) - fill_percentage) < 0.5
+            and delta is not None and delta < 0.5
             and (distance_cm is None
                  or abs((last.distance_cm or 0) - distance_cm) < 0.5)
-            and last.create_date
-            and (now - last.create_date).total_seconds() < dedupe_min * 60)
+            and elapsed is not None and elapsed < dedupe_min * 60)
+        throttled = bool(
+            last and min_storage_s > 0
+            and elapsed is not None and elapsed < min_storage_s
+            and delta is not None and delta < storage_delta)
+        duplicate = identical or throttled
 
         if not duplicate:
             self.env["otm.swm.sensor.reading"].create({
@@ -270,11 +289,13 @@ class SwmBin(models.Model):
                 "signal_strength": signal_strength,
                 "raw_payload": raw,
             })
-            comm_vals.update({
-                "current_distance_cm": distance_cm,
-                "fill_percentage": fill_percentage,
-                "last_reading_time": now,
-            })
+        # Live fields always reflect the latest reading, stored or not —
+        # the staff QR approval and dashboards rely on fresh values.
+        comm_vals.update({
+            "current_distance_cm": distance_cm,
+            "fill_percentage": fill_percentage,
+            "last_reading_time": now,
+        })
         self.write(comm_vals)
 
         if was_offline and comm_vals["device_online"]:
@@ -298,7 +319,29 @@ class SwmBin(models.Model):
             return {"changed": False}
         new_status = self._status_from_fill(fill, force=force)
         if new_status == self.status:
+            if self.pending_status_candidate:
+                self.write({"pending_status_candidate": False,
+                            "pending_status_count": 0})
             return {"changed": False}
+        # Noise debounce: entering a critical state (full → creates a
+        # collection request; collected → completes one) requires N
+        # consecutive readings agreeing, so a single stray ultrasonic
+        # echo cannot fire requests, completions, or Telegram alerts.
+        confirm = self.env["res.config.settings"].swm_get_int(
+            "status_confirm_count", 2)
+        if not force and confirm > 1 and new_status in ("full", "collected"):
+            if self.pending_status_candidate == new_status:
+                count = self.pending_status_count + 1
+            else:
+                count = 1
+            if count < confirm:
+                self.write({"pending_status_candidate": new_status,
+                            "pending_status_count": count})
+                return {"changed": False, "pending": new_status,
+                        "pending_count": count}
+        if self.pending_status_candidate:
+            self.write({"pending_status_candidate": False,
+                        "pending_status_count": 0})
         old = self.status
         if new_status == "full" and old not in FULL_LIKE:
             self._on_bin_full()

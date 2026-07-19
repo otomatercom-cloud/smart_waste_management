@@ -28,6 +28,25 @@ class ResConfigSettings(models.TransientModel):
         help="Identical consecutive readings inside this window are not "
              "stored as new history rows (last-communication time is still "
              "updated).")
+    swm_min_storage_seconds = fields.Integer(
+        string="Min Seconds Between Stored Readings", default=60,
+        config_parameter=PARAM_PREFIX + "min_storage_seconds",
+        help="At most one reading row is stored per bin within this "
+             "interval, unless the fill changes significantly. The live "
+             "status engine still processes every reading. 0 disables "
+             "throttling.")
+    swm_storage_delta = fields.Integer(
+        string="Significant Fill Change (%)", default=5,
+        config_parameter=PARAM_PREFIX + "storage_delta",
+        help="A fill change of at least this many percent is stored "
+             "immediately, bypassing the storage throttle.")
+    swm_status_confirm_count = fields.Integer(
+        string="Status Confirmation Readings", default=2,
+        config_parameter=PARAM_PREFIX + "status_confirm_count",
+        help="Consecutive agreeing readings required before a bin enters "
+             "Full or Collected. Protects against ultrasonic noise firing "
+             "false requests, completions, and Telegram alerts. 1 "
+             "disables; 2-3 recommended for HC-SR04 sensors.")
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,
         config_parameter=PARAM_PREFIX + "reading_retention_days")

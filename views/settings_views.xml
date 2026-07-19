@@ -33,6 +33,18 @@
                                  help="Readings with the same fill level within this window are not stored again.">
                             <field name="swm_dedupe_minutes"/>
                         </setting>
+                        <setting string="Min Seconds Between Stored Readings"
+                                 help="Store at most one reading row per bin in this interval; large fill changes are always stored. 0 disables.">
+                            <field name="swm_min_storage_seconds"/>
+                        </setting>
+                        <setting string="Significant Fill Change (%)"
+                                 help="A change of at least this many percent bypasses the storage throttle and is stored immediately.">
+                            <field name="swm_storage_delta"/>
+                        </setting>
+                        <setting string="Status Confirmation Readings"
+                                 help="Consecutive readings required before Full/Collected take effect. 2-3 recommended for ultrasonic sensors; 1 disables.">
+                            <field name="swm_status_confirm_count"/>
+                        </setting>
                         <setting string="Reading Retention (days)"
                                  help="Sensor readings older than this are purged by a daily cron.">
                             <field name="swm_reading_retention_days"/>

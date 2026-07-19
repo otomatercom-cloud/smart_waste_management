@@ -64,6 +64,11 @@ class SwmCommon(TransactionCase):
             "bin_height_cm": 100.0,
             "device_id": "ESP32-TEST-02",
         })
+        # Most engine tests assert single-reading transitions; the noise
+        # debounce (status_confirm_count, default 2) is exercised by its
+        # own dedicated tests.
+        env["ir.config_parameter"].sudo().set_param(
+            "smart_waste_management.status_confirm_count", "1")
 
     def set_param(self, key, value):
         self.env["ir.config_parameter"].sudo().set_param(
