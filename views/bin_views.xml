@@ -123,9 +123,16 @@
                             <field name="last_emptied_time"/>
                         </group>
                     </group>
-                    <group string="Public QR Page">
-                        <field name="public_url" widget="url"/>
-                        <field name="qr_image_url" widget="url"/>
+                    <group string="QR Pages">
+                        <group string="Public (outside of bin)">
+                            <field name="public_url" widget="url"/>
+                            <field name="qr_image_url" widget="url"/>
+                        </group>
+                        <group string="Staff Collect (inside the lid)"
+                               groups="smart_waste_management.group_swm_supervisor">
+                            <field name="staff_qr_url" widget="url"/>
+                            <field name="staff_qr_image_url" widget="url"/>
+                        </group>
                     </group>
                     <notebook>
                         <page string="Recent Readings" name="readings">

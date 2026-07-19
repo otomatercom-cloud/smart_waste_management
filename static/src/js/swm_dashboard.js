@@ -56,7 +56,9 @@ export class SwmDashboard extends Component {
         const counts = {};
         let total = 0;
         for (const g of statusGroups) {
-            const key = g.status && g.status[0] ? g.status[0] : g.status;
+            // Selection groupby values are plain strings; m2o values are
+            // [id, label] pairs — handle both.
+            const key = Array.isArray(g.status) ? g.status[0] : g.status;
             const cnt = g.__count || 0;
             counts[key] = cnt;
             total += cnt;

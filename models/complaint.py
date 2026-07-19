@@ -57,8 +57,13 @@ class SwmComplaint(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get("name") or vals["name"] == _("New"):
-                vals["name"] = self.env["ir.sequence"].next_by_code(
-                    "otm.swm.complaint") or "/"
+                Seq = self.env["ir.sequence"].sudo()
+                name = Seq.next_by_code("otm.swm.complaint")
+                if not name:
+                    seq = Seq.search(
+                        [("code", "=", "otm.swm.complaint")], limit=1)
+                    name = seq.next_by_id() if seq else "/"
+                vals["name"] = name
         return super().create(vals_list)
 
     def action_assign(self):

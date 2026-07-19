@@ -41,6 +41,7 @@ public bin QR status pages, complaints and collection history.
         'views/menus.xml',
         'views/portal_templates.xml',
         'views/public_templates.xml',
+        'views/staff_qr_templates.xml',
     ],
     'demo': [
         'demo/demo_data.xml',

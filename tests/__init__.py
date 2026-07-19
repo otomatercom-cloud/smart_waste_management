@@ -5,3 +5,4 @@ from . import test_iot_api
 from . import test_escalation
 from . import test_telegram_token
 from . import test_portal_security
+from . import test_staff_qr

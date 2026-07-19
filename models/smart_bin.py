@@ -107,6 +107,12 @@ class SwmBin(models.Model):
 
     public_url = fields.Char(compute="_compute_public_url", string="Public Page")
     qr_image_url = fields.Char(compute="_compute_public_url", string="QR Code")
+    staff_qr_url = fields.Char(
+        compute="_compute_public_url", string="Staff Collect Page",
+        help="Login-protected page for collection staff to approve an "
+             "emptied bin. Print this QR inside the lid.")
+    staff_qr_image_url = fields.Char(
+        compute="_compute_public_url", string="Staff QR Code")
 
     _sql_constraints = [
         ("code_uniq", "unique(code)", "Bin code must be unique."),
@@ -149,6 +155,12 @@ class SwmBin(models.Model):
             rec.public_url = url
             rec.qr_image_url = (
                 f"/report/barcode/?barcode_type=QR&value={quote(url, safe='')}"
+                f"&width=220&height=220")
+            staff_url = f"{url}/collect"
+            rec.staff_qr_url = staff_url
+            rec.staff_qr_image_url = (
+                f"/report/barcode/?barcode_type=QR"
+                f"&value={quote(staff_url, safe='')}"
                 f"&width=220&height=220")
 
     def action_regenerate_token(self):
@@ -317,6 +329,13 @@ class SwmBin(models.Model):
         self.write({"status": "full", "full_since": now,
                     "last_status_change": now,
                     "collection_completed_time": False})
+        # A bin can transition into "full" from offline/maintenance while
+        # a request is still open (device silence → offline cron → device
+        # returns). Never stack a second request on an open one.
+        existing = self.open_request_id
+        if existing:
+            self.write({"status": "collection_pending"})
+            return existing
         request = self.env["otm.swm.collection.request"].sudo().create({
             "bin_id": self.id,
             "staff_id": self._resolve_staff().id or False,
@@ -368,6 +387,64 @@ class SwmBin(models.Model):
         })
         self.env["otm.swm.notification.rule"].sudo().process_event(
             "collection_completed", self, request=request)
+
+    def qr_confirm_collection(self):
+        """Staff scanned the collect QR and asks to approve the bin as
+        emptied. Only approved when the sensor corroborates: a fresh
+        reading at or below the empty threshold. Returns a dict with
+        ok + a human message for the page."""
+        self.ensure_one()
+        t = self._thresholds()
+        now = fields.Datetime.now()
+        Settings = self.env["res.config.settings"]
+
+        if self.status == "maintenance":
+            return {"ok": False, "reason": "maintenance",
+                    "message": _("Bin is under maintenance — approval is "
+                                 "disabled until maintenance is cleared.")}
+
+        # Reading freshness: refuse to approve on stale data.
+        stale_minutes = Settings.swm_get_int("device_offline_minutes", 120)
+        stale_limit = fields.Datetime.subtract(now, minutes=stale_minutes)
+        if not self.last_reading_time or self.last_reading_time < stale_limit:
+            return {"ok": False, "reason": "stale",
+                    "message": _("No recent sensor reading. Close the lid, "
+                                 "wait for the sensor to report, and try "
+                                 "again.")}
+
+        # The core rule: approve only if the bin is actually empty.
+        if self.fill_percentage > t["empty"]:
+            return {"ok": False, "reason": "not_empty",
+                    "message": _("Sensor still reports %s%% fill — above "
+                                 "the empty threshold of %s%%. The bin is "
+                                 "not empty yet. Close the lid and wait "
+                                 "for a fresh reading if you just emptied "
+                                 "it.") % (round(self.fill_percentage),
+                                           int(t["empty"]))}
+
+        request = self.open_request_id
+        if request:
+            request.sudo().action_mark_done(
+                qr_confirmed=True,
+                note=_("Approved via staff QR scan by %s",
+                       self.env.user.name))
+        self.sudo().write({
+            "status": "available",
+            "last_status_change": now,
+            "last_emptied_time": now,
+            "collection_completed_time": now,
+            "full_since": False,
+        })
+        self.sudo().message_post(body=_(
+            "Collection approved via staff QR scan by %s "
+            "(sensor fill: %s%%).",
+            self.env.user.name, round(self.fill_percentage)))
+        if request:
+            self.env["otm.swm.notification.rule"].sudo().process_event(
+                "collection_completed", self, request=request)
+        return {"ok": True, "reason": "approved",
+                "message": _("Collection approved — bin is now marked "
+                             "Available.")}
 
     # ------------------------------------------------------------------
     # Crons

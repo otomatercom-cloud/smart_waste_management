@@ -42,6 +42,10 @@ class SwmCollectionRequest(models.Model):
                                      readonly=True)
     sensor_confirmed = fields.Boolean(
         string="Sensor Confirmed Empty", readonly=True)
+    qr_confirmed = fields.Boolean(
+        string="Staff QR Confirmed", readonly=True,
+        help="Approved by collection staff scanning the bin QR code, "
+             "validated against a live empty sensor reading.")
     manual_completion = fields.Boolean(readonly=True)
     manual_completion_note = fields.Char(readonly=True)
     response_hours = fields.Float(
@@ -58,8 +62,17 @@ class SwmCollectionRequest(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get("name") or vals["name"] == _("New"):
-                vals["name"] = self.env["ir.sequence"].next_by_code(
-                    "otm.swm.collection.request") or "/"
+                Seq = self.env["ir.sequence"].sudo()
+                name = Seq.next_by_code("otm.swm.collection.request")
+                if not name:
+                    # next_by_code is company-filtered; in the superuser
+                    # HTTP env (IoT endpoint) the company context can miss
+                    # the sequence. Resolve by code directly instead.
+                    seq = Seq.search(
+                        [("code", "=", "otm.swm.collection.request")],
+                        limit=1)
+                    name = seq.next_by_id() if seq else "/"
+                vals["name"] = name
             if vals.get("bin_id") and not vals.get("fill_at_request"):
                 vals["fill_at_request"] = self.env["otm.swm.bin"].browse(
                     vals["bin_id"]).fill_percentage
@@ -85,27 +98,31 @@ class SwmCollectionRequest(models.Model):
                 rec.bin_id.sudo()._change_status("collection_in_progress")
         return True
 
-    def action_mark_done(self, sensor_confirmed=False, note=None):
+    def action_mark_done(self, sensor_confirmed=False, note=None,
+                         qr_confirmed=False):
         now = fields.Datetime.now()
         for rec in self:
-            if not sensor_confirmed and not self.env.user.has_group(
+            if not sensor_confirmed and not qr_confirmed and \
+                    not self.env.user.has_group(
                     "smart_waste_management.group_swm_supervisor"):
                 raise AccessError(_(
                     "Manual completion requires the Collection Supervisor "
                     "role; normally completion is detected automatically by "
                     "the fill-level sensor."))
+            manual = not sensor_confirmed and not qr_confirmed
             vals = {
                 "state": "done",
                 "completed_time": now,
                 "sensor_confirmed": sensor_confirmed,
-                "manual_completion": not sensor_confirmed,
+                "qr_confirmed": qr_confirmed,
+                "manual_completion": manual,
                 "manual_completion_note": note,
             }
             if rec.full_detected_time:
                 vals["response_hours"] = (
                     now - rec.full_detected_time).total_seconds() / 3600.0
             rec.write(vals)
-            if not sensor_confirmed:
+            if manual:
                 rec.message_post(body=_(
                     "Collection manually marked completed by %s. %s",
                     self.env.user.name, note or ""))

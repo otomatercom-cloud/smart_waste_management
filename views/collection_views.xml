@@ -74,6 +74,7 @@
                         </group>
                         <group string="Completion">
                             <field name="sensor_confirmed"/>
+                            <field name="qr_confirmed"/>
                             <field name="manual_completion"/>
                             <field name="manual_completion_note"
                                    invisible="not manual_completion"/>

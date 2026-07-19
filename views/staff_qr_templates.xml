@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Access denied page for non-staff logins -->
+    <template id="staff_collect_denied" name="Smart Waste: Staff Only">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1"/>
+                <meta name="robots" content="noindex"/>
+                <title>Staff Only</title>
+            </head>
+            <body style="font-family: system-ui, sans-serif; padding: 24px; text-align: center;">
+                <h2>Collection Staff Only</h2>
+                <p>This page is for waste collection staff. Your account
+                   does not have the Collection Staff role.</p>
+            </body>
+        </html>
+    </template>
+
+    <!-- Staff collect approval page -->
+    <template id="staff_collect_page" name="Smart Waste: Staff Collect">
+        <t t-set="status_labels"
+           t-value="dict(bin._fields['status'].selection)"/>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1"/>
+                <meta name="robots" content="noindex"/>
+                <title>Collect <t t-out="bin.code"/></title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body {
+                        margin: 0;
+                        font-family: system-ui, -apple-system, "Segoe UI",
+                            Roboto, sans-serif;
+                        background: #f4f6f8;
+                        color: #212529;
+                    }
+                    .swm-wrap {
+                        max-width: 480px;
+                        margin: 0 auto;
+                        padding: 16px;
+                    }
+                    .swm-card {
+                        background: #fff;
+                        border-radius: 12px;
+                        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+                        padding: 16px;
+                        margin-bottom: 16px;
+                    }
+                    .swm-code { font-size: 1.4rem; font-weight: 700; }
+                    .swm-badge {
+                        display: inline-block;
+                        padding: 4px 12px;
+                        border-radius: 999px;
+                        color: #fff;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                    }
+                    .swm-b-available, .swm-b-collected {
+                        background: #28a745; }
+                    .swm-b-nearly_full { background: #ffc107;
+                        color: #212529; }
+                    .swm-b-full, .swm-b-collection_pending {
+                        background: #dc3545; }
+                    .swm-b-collection_in_progress { background: #17a2b8; }
+                    .swm-b-offline, .swm-b-maintenance {
+                        background: #6c757d; }
+                    .swm-meta { color: #6c757d; font-size: 0.9rem;
+                        margin-top: 4px; }
+                    .swm-fill {
+                        font-size: 2.6rem;
+                        font-weight: 700;
+                        text-align: center;
+                        margin: 10px 0 0;
+                    }
+                    .swm-fill-label { text-align: center;
+                        color: #6c757d; margin-bottom: 6px; }
+                    .swm-msg-ok {
+                        background: #d4edda; color: #155724;
+                        border-radius: 8px; padding: 12px;
+                        margin-bottom: 16px; font-weight: 600;
+                    }
+                    .swm-msg-err {
+                        background: #f8d7da; color: #721c24;
+                        border-radius: 8px; padding: 12px;
+                        margin-bottom: 16px; font-weight: 600;
+                    }
+                    button.swm-approve {
+                        width: 100%;
+                        padding: 16px;
+                        border: 0;
+                        border-radius: 10px;
+                        background: #28a745;
+                        color: #fff;
+                        font-size: 1.15rem;
+                        font-weight: 700;
+                    }
+                    .swm-hint { color: #6c757d; font-size: 0.85rem;
+                        text-align: center; margin-top: 10px; }
+                    .swm-footer { text-align: center; color: #adb5bd;
+                        font-size: 0.8rem; margin: 16px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="swm-wrap">
+                    <div class="swm-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="swm-code" t-out="bin.code"/>
+                            <span t-attf-class="swm-badge swm-b-{{bin.status}}"
+                                  t-out="status_labels.get(bin.status)"/>
+                        </div>
+                        <div class="swm-meta">
+                            <t t-out="bin.name"/>
+                            <t t-if="bin.street_id"> ·
+                                <t t-out="bin.street_id.name"/></t>
+                        </div>
+                        <div class="swm-fill">
+                            <t t-out="round(bin.fill_percentage)"/>%
+                        </div>
+                        <div class="swm-fill-label">
+                            current sensor fill
+                            <t t-if="bin.last_reading_time">
+                                · <t t-out="bin.last_reading_time"
+                                     t-options="{'widget': 'datetime'}"/>
+                            </t>
+                        </div>
+                    </div>
+
+                    <div t-if="result_ok and result_message"
+                         class="swm-msg-ok">
+                        <t t-out="result_message"/>
+                    </div>
+                    <div t-if="not result_ok and result_message"
+                         class="swm-msg-err">
+                        <t t-out="result_message"/>
+                    </div>
+
+                    <div t-if="not result_ok" class="swm-card">
+                        <form method="post"
+                              t-attf-action="/waste/bin/{{bin.code}}/collect/approve">
+                            <input type="hidden" name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="swm-approve">
+                                ✓ Approve — Bin is Empty
+                            </button>
+                        </form>
+                        <div class="swm-hint">
+                            Empty the bin and close the lid first. Approval
+                            only succeeds when the sensor confirms the bin
+                            is empty.
+                        </div>
+                    </div>
+
+                    <div class="swm-footer">
+                        Smart Waste Management · Otomater
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+</odoo>
