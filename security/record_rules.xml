@@ -149,10 +149,64 @@
         <field name="groups" eval="[(4, ref('group_swm_collection_staff'))]"/>
     </record>
 
-    <record id="rule_request_supervisor_all" model="ir.rule">
-        <field name="name">SWM Request: supervisor all</field>
-        <field name="model_id" ref="model_otm_swm_collection_request"/>
+    <!-- ============ Hierarchy scopes on association/street/complaint ====
+         Group rules are OR-combined, so each level widens the previous
+         one instead of replacing it. Without these, anyone implied into
+         association_staff (including admin) is trapped by the
+         association-scope rule on these three models. ============ -->
+    <record id="rule_association_ward" model="ir.rule">
+        <field name="name">SWM Association: ward officer scope</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
+        <field name="domain_force">[('ward_id.officer_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_ward_manager'))]"/>
+    </record>
+
+    <record id="rule_association_zone" model="ir.rule">
+        <field name="name">SWM Association: zone manager scope</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
+        <field name="domain_force">[('zone_id.manager_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_zone_manager'))]"/>
+    </record>
+
+    <record id="rule_association_corporation" model="ir.rule">
+        <field name="name">SWM Association: corporation officer scope</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
+        <field name="domain_force">['|', ('corporation_id.officer_id', '=', user.id), ('corporation_id', '=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_corporation_manager'))]"/>
+    </record>
+
+    <record id="rule_association_admin_all" model="ir.rule">
+        <field name="name">SWM Association: administrator all</field>
+        <field name="model_id" ref="model_otm_swm_association"/>
         <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[(4, ref('group_swm_supervisor'))]"/>
+        <field name="groups" eval="[(4, ref('group_swm_manager'))]"/>
+    </record>
+
+    <record id="rule_street_corporation" model="ir.rule">
+        <field name="name">SWM Street: corporation officer scope</field>
+        <field name="model_id" ref="model_otm_swm_street"/>
+        <field name="domain_force">['|', ('association_id.corporation_id.officer_id', '=', user.id), ('association_id.corporation_id', '=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_corporation_manager'))]"/>
+    </record>
+
+    <record id="rule_street_admin_all" model="ir.rule">
+        <field name="name">SWM Street: administrator all</field>
+        <field name="model_id" ref="model_otm_swm_street"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_manager'))]"/>
+    </record>
+
+    <record id="rule_complaint_corporation" model="ir.rule">
+        <field name="name">SWM Complaint: corporation officer scope</field>
+        <field name="model_id" ref="model_otm_swm_complaint"/>
+        <field name="domain_force">['|', ('association_id.corporation_id.officer_id', '=', user.id), ('association_id', '=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_corporation_manager'))]"/>
+    </record>
+
+    <record id="rule_complaint_admin_all" model="ir.rule">
+        <field name="name">SWM Complaint: administrator all</field>
+        <field name="model_id" ref="model_otm_swm_complaint"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_swm_manager'))]"/>
     </record>
 </odoo>
