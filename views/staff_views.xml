@@ -45,6 +45,16 @@
                             <field name="telegram_username"/>
                             <field name="telegram_chat_id"
                                    groups="smart_waste_management.group_swm_manager"/>
+                            <field name="telegram_deep_link" widget="url"
+                                   invisible="not telegram_deep_link"/>
+                            <div colspan="2" class="text-muted" invisible="user_id">
+                                Link a user above to enable Telegram sync.
+                            </div>
+                            <button name="action_sync_telegram_from_bot"
+                                    type="object" string="Sync from Telegram Bot"
+                                    class="btn-link" icon="fa-refresh"
+                                    invisible="not user_id"
+                                    help="Pull the chat ID from the shared Otomater Telegram bot if this staff's user has connected via /start."/>
                         </group>
                     </group>
                     <group string="Assignment Scope">

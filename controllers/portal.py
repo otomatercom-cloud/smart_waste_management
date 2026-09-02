@@ -78,11 +78,12 @@ class SwmPortal(http.Controller):
         member = env["otm.swm.association.member"]._member_for_user(env.user)
         if not member:
             return request.redirect("/my/waste")
-        token = None
-        deep_link = ""
-        if not member.telegram_connected:
-            token = env["otm.swm.telegram.token"].issue_for_member(member)
-            deep_link = token.deep_link()
+        # Pull in any link completed since the member last viewed this
+        # page (the shared bot's webhook writes to res.users, not here).
+        member.sudo().action_sync_telegram_from_bot()
+        deep_link = (
+            "" if member.telegram_connected
+            else (env.user.sudo().telegram_deep_link or ""))
         return request.render("smart_waste_management.portal_telegram_connect", {
             "member": member,
             "deep_link": deep_link,

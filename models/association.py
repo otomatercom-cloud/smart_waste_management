@@ -108,13 +108,21 @@ class SwmAssociationMember(models.Model):
     active = fields.Boolean(default=True)
 
     # Telegram linkage — chat identifiers restricted to managers.
+    # connected + chat_id are editable so administrators can link a
+    # member manually (e.g. before the webhook/SSL is available); the
+    # QR self-registration flow fills them automatically as well.
     telegram_connected = fields.Boolean(
-        string="Telegram Connected", readonly=True, copy=False)
+        string="Telegram Connected", copy=False,
+        help="On when the member can receive Telegram messages. Set "
+             "automatically by the QR registration flow, or manually "
+             "together with a Chat ID.")
     telegram_chat_id = fields.Char(
-        readonly=True, copy=False,
-        groups="smart_waste_management.group_swm_manager")
+        copy=False,
+        groups="smart_waste_management.group_swm_manager",
+        help="Numeric Telegram chat ID. Ask the member to message "
+             "@userinfobot, or read it from the bot's getUpdates.")
     telegram_user_id = fields.Char(
-        readonly=True, copy=False,
+        copy=False,
         groups="smart_waste_management.group_swm_manager")
     telegram_username = fields.Char(readonly=True, copy=False)
     telegram_connected_on = fields.Datetime(readonly=True, copy=False)
@@ -129,7 +137,40 @@ class SwmAssociationMember(models.Model):
     notify_available = fields.Boolean(
         string="Notify: Bin Available Again", default=False)
 
+    def action_sync_telegram_from_bot(self):
+        """Pull the linked chat_id from the shared software_telegram bot
+        (via this member's portal res.users) into this member's own
+        fields. The member's Telegram fields stay the single interface
+        the notification engine reads — this just keeps them in step
+        with the shared bot's registry instead of maintaining a second,
+        module-specific webhook and token flow. A no-op, not an error,
+        when the member has no portal user or hasn't connected yet."""
+        for rec in self:
+            user = rec.sudo().user_id
+            contact = user.sudo().telegram_contact_id if user else False
+            if not contact:
+                continue
+            rec.sudo().write({
+                "telegram_connected": True,
+                "telegram_chat_id": contact.chat_id,
+                "telegram_user_id": contact.chat_id,
+                "telegram_username": contact.telegram_username or "",
+                "telegram_connected_on": (
+                    rec.telegram_connected_on or fields.Datetime.now()),
+            })
+        return True
+
     def action_disconnect_telegram(self):
+        for rec in self:
+            # Break the shared bot's link too (and rotate the link token)
+            # — otherwise action_sync_telegram_from_bot would silently
+            # reconnect this member from the still-linked res.users
+            # contact the next time this page loads, and the member's
+            # old QR/deep-link would still work to reconnect them.
+            user = rec.sudo().user_id
+            if user:
+                user.sudo().action_disconnect_telegram()
+                user.sudo().action_regenerate_telegram_link()
         self.sudo().write({
             "telegram_connected": False,
             "telegram_chat_id": False,

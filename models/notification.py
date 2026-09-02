@@ -168,17 +168,29 @@ class SwmNotificationRule(models.Model):
         recipients = self._resolve_recipients(bin_rec, request=request,
                                               trigger=trigger)
         Log = self.env["otm.swm.notification.log"].sudo()
-        Telegram = self.env["otm.swm.telegram"].sudo()
+        # Outgoing Telegram sends go through the shared software_telegram
+        # bridge (one bot config, one message log, one retry cron for the
+        # whole ERP) rather than a bot connection of our own. send_direct
+        # never raises, so a Telegram outage can never break the sensor
+        # transaction that triggered the notification.
+        Bridge = self.env["software.telegram.message"].sudo()
         if self.channel_telegram:
             if not recipients:
                 Log.create(self._log_vals(
                     bin_rec, request, "telegram", "", message, "skipped",
                     "No Telegram recipient resolved"))
             for chat_id, label in recipients:
-                ok, detail = Telegram.send_message(chat_id, message)
+                ok = Bridge.send_direct(
+                    chat_id=chat_id, text=message,
+                    event_type="swm_%s" % (trigger or self.trigger_type),
+                    res_model=(request._name if request else bin_rec._name),
+                    res_id=(request.id if request else bin_rec.id))
                 Log.create(self._log_vals(
                     bin_rec, request, "telegram", label or chat_id, message,
-                    "sent" if ok else "failed", detail))
+                    "sent" if ok else "failed",
+                    "" if ok else "software_telegram send_direct returned "
+                                  "False — see Telegram > Messages log for "
+                                  "the bot config / API error."))
         if self.channel_internal:
             target = request or bin_rec
             try:

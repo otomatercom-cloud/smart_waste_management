@@ -55,7 +55,20 @@
                         </setting>
                     </block>
                     <block title="Telegram Bot">
-                        <setting string="Bot Token"
+                        <div class="o_setting_box" colspan="2">
+                            <div class="text-muted">
+                                Outgoing messages and the member/staff
+                                self-registration link now go through the
+                                shared <strong>Telegram Notifications</strong>
+                                app (software_telegram) — configure the bot
+                                token, username, and webhook there. The
+                                fields below are used only by the legacy
+                                per-module fallback (manual token issuance
+                                under Notifications &gt; Telegram Link
+                                Tokens) and are otherwise no longer required.
+                            </div>
+                        </div>
+                        <setting string="Bot Token (legacy fallback)"
                                  help="Token from @BotFather. Kept in system parameters; visible to administrators only.">
                             <field name="swm_telegram_bot_token"
                                    password="True"/>

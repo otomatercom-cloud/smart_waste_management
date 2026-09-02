@@ -17,6 +17,12 @@ class SwmStaff(models.Model):
         string="Telegram Chat ID",
         groups="smart_waste_management.group_swm_manager")
     telegram_username = fields.Char(string="Telegram Account")
+    telegram_deep_link = fields.Char(
+        string="Telegram Connect Link", compute="_compute_telegram_deep_link",
+        help="Personal link into the shared Otomater Telegram bot for "
+             "this staff's linked user. Send it to them, or generate a "
+             "QR from it, so they can self-connect instead of an admin "
+             "typing their chat ID by hand.")
     is_supervisor = fields.Boolean(string="Collection Supervisor")
     supervisor_id = fields.Many2one(
         "otm.swm.staff", string="Supervisor",
@@ -45,6 +51,27 @@ class SwmStaff(models.Model):
     @api.model
     def _staff_for_user(self, user):
         return self.sudo().search([("user_id", "=", user.id)], limit=1)
+
+    def _compute_telegram_deep_link(self):
+        for rec in self:
+            rec.telegram_deep_link = (
+                rec.sudo().user_id.telegram_deep_link
+                if rec.user_id else False)
+
+    def action_sync_telegram_from_bot(self):
+        """Pull the linked chat_id from the shared software_telegram bot
+        (via this staff's user) into this record's own fields — see
+        the identical method on otm.swm.association.member for why."""
+        for rec in self:
+            user = rec.sudo().user_id
+            contact = user.sudo().telegram_contact_id if user else False
+            if not contact:
+                continue
+            rec.sudo().write({
+                "telegram_chat_id": contact.chat_id,
+                "telegram_username": contact.telegram_username or "",
+            })
+        return True
 
     def action_view_open_requests(self):
         self.ensure_one()

@@ -18,7 +18,7 @@ public bin QR status pages, complaints and collection history.
     'company': 'Otomater',
     'website': 'https://otomater.com',
     'license': 'OPL-1',
-    'depends': ['base', 'mail', 'portal', 'web'],
+    'depends': ['base', 'mail', 'portal', 'web', 'software_telegram'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
