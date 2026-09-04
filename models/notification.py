@@ -214,9 +214,24 @@ class SwmNotificationRule(models.Model):
         staff = (request.staff_id if request and request.staff_id
                  else bin_rec.staff_id or bin_rec.sudo()._resolve_staff())
         if rtype == "collection_staff" and staff:
-            if staff.sudo().telegram_chat_id:
-                result.append((staff.sudo().telegram_chat_id,
-                               f"Staff: {staff.name}"))
+            chat_id = staff.sudo().telegram_chat_id
+            if not chat_id and bin_rec.staff_id and bin_rec.staff_id != staff:
+                # The request's own assignee (often set once, at request
+                # creation) has no Telegram link, but the bin has since
+                # been given a different, currently-assigned staff member
+                # who might. Try them rather than silently sending
+                # nothing - this never overrides a reachable assignment,
+                # it only fires when the first choice can't be reached.
+                fallback_staff = bin_rec.staff_id
+                fallback_chat_id = fallback_staff.sudo().telegram_chat_id
+                if fallback_chat_id:
+                    result.append((fallback_chat_id,
+                                   f"Staff: {fallback_staff.name} "
+                                   f"(bin's current assignee - {staff.name} "
+                                   f"on this request has no Telegram link)"))
+                    chat_id = None  # already handled above
+            if chat_id:
+                result.append((chat_id, f"Staff: {staff.name}"))
         elif rtype == "supervisor":
             sup = staff.supervisor_id if staff else self.env["otm.swm.staff"]
             if not sup:
