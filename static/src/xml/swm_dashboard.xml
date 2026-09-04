@@ -151,6 +151,49 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Bins pending collection — the detail behind the
+                     "Pending Collection" tile. A bin shows here from
+                     the moment it's detected full until it's actually
+                     emptied, even before/without a request row. -->
+                <div class="swm-dash-panel swm-dash-panel-wide">
+                    <h5>Bins Pending Collection</h5>
+                    <table class="table table-sm swm-dash-table">
+                        <thead>
+                            <tr>
+                                <th>Bin</th>
+                                <th>Street</th>
+                                <th>Association</th>
+                                <th class="text-end">Fill</th>
+                                <th>Status</th>
+                                <th>Staff</th>
+                                <th>Full Since</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.pendingBins"
+                                t-as="b" t-key="b.id"
+                                class="swm-dash-row"
+                                t-on-click="() => this.openBinRecord(b.id)">
+                                <td t-esc="b.code"/>
+                                <td t-esc="b.street_id ? b.street_id[1] : '—'"/>
+                                <td t-esc="b.association_id ? b.association_id[1] : '—'"/>
+                                <td class="text-end">
+                                    <span t-att-class="b.fill_percentage >= 90 ? 'text-danger fw-bold' : 'fw-bold'"
+                                          t-esc="Math.round(b.fill_percentage) + '%'"/>
+                                </td>
+                                <td t-esc="this.statusLabel(b.status)"/>
+                                <td t-esc="b.staff_id ? b.staff_id[1] : '—'"/>
+                                <td t-esc="b.full_since || '—'"/>
+                            </tr>
+                            <tr t-if="!state.pendingBins.length">
+                                <td colspan="7" class="text-muted">
+                                    No bins pending collection. 🎉
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </t>

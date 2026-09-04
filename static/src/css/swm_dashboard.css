@@ -86,6 +86,11 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+.swm-dash-panel-wide {
+    margin-top: 16px;
+    overflow-x: auto;
+}
+
 .swm-dash-table {
     margin-bottom: 0;
 }

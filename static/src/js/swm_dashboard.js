@@ -33,6 +33,7 @@ export class SwmDashboard extends Component {
             byStatus: [],
             byCorporation: [],
             recentRequests: [],
+            pendingBins: [],
             isManager: false,
         });
         onWillStart(async () => {
@@ -143,6 +144,21 @@ export class SwmDashboard extends Component {
                 "escalation_level", "full_detected_time"],
             { limit: 10, order: "full_detected_time asc" },
         );
+
+        // Bin-level detail behind the "Pending Collection" tile — a bin
+        // moves straight to collection_pending the instant a request is
+        // created, so the request table above already covers it; this
+        // reads the bin record directly (fill %, staff, since-when) so
+        // nothing needs an extra click to see what's actually pending.
+        this.state.pendingBins = await orm.searchRead(
+            "otm.swm.bin",
+            [["status", "in",
+                ["full", "collection_pending", "collection_in_progress"]],
+                ["active", "=", true]],
+            ["code", "name", "street_id", "association_id",
+                "fill_percentage", "status", "staff_id", "full_since"],
+            { limit: 20, order: "full_since asc" },
+        );
         this.state.loading = false;
     }
 
@@ -197,6 +213,16 @@ export class SwmDashboard extends Component {
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "otm.swm.collection.request",
+            res_id: id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
+    openBinRecord(id) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "otm.swm.bin",
             res_id: id,
             views: [[false, "form"]],
             target: "current",
