@@ -50,6 +50,35 @@ class SwmPublicBin(http.Controller):
                 "submitted": bool(submitted),
             })
 
+    @http.route("/waste/bin/<string:bin_code>/details", type="http",
+                auth="public", website=False, sitemap=False)
+    def public_bin_details(self, bin_code, **kw):
+        env = request.env(su=True)
+        bin_rec = env["otm.swm.bin"].search(
+            [("code", "=", bin_code), ("active", "=", True)], limit=1)
+        if not bin_rec:
+            return request.not_found()
+        History = env["otm.swm.collection.history"]
+        cycles = History.search_count([("bin_id", "=", bin_rec.id)])
+        breaches = History.search_count(
+            [("bin_id", "=", bin_rec.id), ("sla_status", "=", "delayed")])
+        last_collected = History.search(
+            [("bin_id", "=", bin_rec.id)],
+            order="completed_time desc", limit=1)
+        Settings = env["res.config.settings"]
+        stale_minutes = Settings.swm_get_int("device_offline_minutes", 120)
+        return request.render(
+            "smart_waste_management.public_bin_details_page", {
+                "bin": bin_rec,
+                "cycles": cycles,
+                "breaches": breaches,
+                "on_time": cycles - breaches,
+                "last_collected": last_collected,
+                "stale_minutes": stale_minutes,
+                "show_fill": Settings.swm_get_bool(
+                    "public_show_fill_percent", True),
+            })
+
     @http.route("/waste/bin/<string:bin_code>/complaint", type="http",
                 auth="public", methods=["POST"], website=False, csrf=True,
                 sitemap=False)

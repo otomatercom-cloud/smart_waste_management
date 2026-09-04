@@ -112,6 +112,13 @@ class SwmBin(models.Model):
 
     public_url = fields.Char(compute="_compute_public_url", string="Public Page")
     qr_image_url = fields.Char(compute="_compute_public_url", string="QR Code")
+    details_url = fields.Char(
+        compute="_compute_public_url", string="Public Details Page",
+        help="Full public status page: live fill, device connectivity, "
+             "location, assigned staff, and history stats. Separate from "
+             "the citizen QR page so it can carry richer detail.")
+    details_qr_image_url = fields.Char(
+        compute="_compute_public_url", string="Details Page QR Code")
     staff_qr_url = fields.Char(
         compute="_compute_public_url", string="Staff Collect Page",
         help="Login-protected page for collection staff to approve an "
@@ -160,6 +167,12 @@ class SwmBin(models.Model):
             rec.public_url = url
             rec.qr_image_url = (
                 f"/report/barcode/?barcode_type=QR&value={quote(url, safe='')}"
+                f"&width=220&height=220")
+            details_url = f"{url}/details"
+            rec.details_url = details_url
+            rec.details_qr_image_url = (
+                f"/report/barcode/?barcode_type=QR"
+                f"&value={quote(details_url, safe='')}"
                 f"&width=220&height=220")
             staff_url = f"{url}/collect"
             rec.staff_qr_url = staff_url

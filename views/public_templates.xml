@@ -180,6 +180,13 @@
                         </form>
                     </div>
 
+                    <div style="text-align:center; margin-bottom:12px;">
+                        <a t-attf-href="/waste/bin/{{ bin.code }}/details"
+                           style="color:#714b67; font-size:0.9rem; font-weight:600; text-decoration:none;">
+                            View live status &amp; history
+                        </a>
+                    </div>
+
                     <div class="swm-footer">
                         Smart Waste Management · Otomater
                     </div>
