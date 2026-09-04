@@ -42,7 +42,7 @@ class SwmNotificationTemplate(models.Model):
              "{request} {staff} {response_hours} {link}")
     active = fields.Boolean(default=True)
 
-    def render(self, bin_rec, request=None):
+    def render(self, bin_rec, request=None, recipient_type=None):
         self.ensure_one()
         tz_now = fields.Datetime.context_timestamp(
             bin_rec, fields.Datetime.now())
@@ -65,7 +65,13 @@ class SwmNotificationTemplate(models.Model):
                       else bin_rec.staff_id.name or ""),
             "response_hours": round(request.response_hours, 1)
             if request and request.response_hours else 0,
-            "link": bin_rec.public_url or "",
+            # Staff/supervisor get the login-gated action page (view +
+            # approve-when-empty) instead of the citizen complaint page,
+            # since that's what they'd actually want to tap into from a
+            # "bin full" alert. Everyone else gets the public page.
+            "link": (bin_rec.staff_qr_url
+                     if recipient_type in ("collection_staff", "supervisor")
+                     else bin_rec.public_url) or "",
         }
         try:
             return self.body.format(**values)
@@ -164,7 +170,8 @@ class SwmNotificationRule(models.Model):
 
     def _fire(self, bin_rec, request=None, trigger=None):
         self.ensure_one()
-        message = self.template_id.render(bin_rec, request=request)
+        message = self.template_id.render(
+            bin_rec, request=request, recipient_type=self.recipient_type)
         recipients = self._resolve_recipients(bin_rec, request=request,
                                               trigger=trigger)
         Log = self.env["otm.swm.notification.log"].sudo()
