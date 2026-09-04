@@ -1,7 +1,7 @@
 # Part of Otomater. See LICENSE file for full copyright and licensing details.
 import logging
 
-from odoo import api, fields, models
+from odoo import SUPERUSER_ID, api, fields, models
 
 _logger = logging.getLogger(__name__)
 
@@ -194,7 +194,15 @@ class SwmNotificationRule(models.Model):
         if self.channel_internal:
             target = request or bin_rec
             try:
-                target.message_post(body=message.replace("\n", "<br/>"))
+                # auth='none' controllers (the IoT sensor endpoint, the
+                # Telegram webhook) have no logged-in session, so
+                # self.env.user there is an EMPTY res.users recordset -
+                # message_post()'s internal author/partner resolution
+                # then raises "Expected singleton: res.users()". Post
+                # as a concrete user (superuser) instead of whatever
+                # ambient user this call happens to run as.
+                target.with_user(SUPERUSER_ID).message_post(
+                    body=message.replace("\n", "<br/>"))
                 Log.create(self._log_vals(
                     bin_rec, request, "internal", "Chatter", message, "sent"))
             except Exception as exc:  # noqa: BLE001 - never break sensor tx
