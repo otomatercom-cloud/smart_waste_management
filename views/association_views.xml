@@ -132,6 +132,10 @@
                 <field name="phone" optional="show"/>
                 <field name="user_id"/>
                 <field name="telegram_connected" widget="boolean_toggle"/>
+                <field name="subscription_plan_id" optional="show"/>
+                <field name="subscription_expiry" optional="show"/>
+                <field name="subscription_valid" widget="boolean_toggle"
+                       optional="show"/>
             </list>
         </field>
     </record>
@@ -148,6 +152,14 @@
                             confirm="Disconnect this member from Telegram?"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box"
+                         groups="smart_waste_management.group_swm_supervisor">
+                        <button name="action_view_payment_history" type="object"
+                                class="oe_stat_button" icon="fa-credit-card">
+                            <field name="subscription_payment_count"
+                                   widget="statinfo" string="Payments"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Member Name"/></h1>
                     </div>
@@ -189,6 +201,7 @@
                     <group string="Subscription (RFID Bin Access)"
                            groups="smart_waste_management.group_swm_supervisor">
                         <group>
+                            <field name="subscription_plan_id"/>
                             <field name="subscription_active"/>
                             <field name="subscription_expiry"/>
                             <field name="subscription_valid"
@@ -199,6 +212,11 @@
                                     type="object" string="Renew Subscription"
                                     class="btn-primary"
                                     groups="smart_waste_management.group_swm_association_manager"/>
+                            <div class="text-muted mt-2"
+                                 invisible="not subscription_plan_id">
+                                Charges the selected plan's current price
+                                and extends by its duration.
+                            </div>
                         </group>
                     </group>
                     <notebook groups="smart_waste_management.group_swm_supervisor">
@@ -231,10 +249,17 @@
                 <filter string="Not Connected" name="f_no_tg"
                         domain="[('telegram_connected', '=', False)]"/>
                 <separator/>
+                <filter string="Subscription Valid" name="f_sub_valid"
+                        domain="[('subscription_valid', '=', True)]"/>
+                <filter string="Subscription Lapsed" name="f_sub_lapsed"
+                        domain="[('subscription_valid', '=', False)]"/>
+                <separator/>
                 <filter string="Association" name="gb_assoc"
                         context="{'group_by': 'association_id'}"/>
                 <filter string="Street" name="gb_street"
                         context="{'group_by': 'street_id'}"/>
+                <filter string="Subscription Plan" name="gb_plan"
+                        context="{'group_by': 'subscription_plan_id'}"/>
             </search>
         </field>
     </record>

@@ -162,6 +162,16 @@ class SwmAssociationMember(models.Model):
         "otm.swm.rfid.card", "member_id", string="RFID Cards")
     rfid_card_count = fields.Integer(
         compute="_compute_rfid_card_count")
+    subscription_plan_id = fields.Many2one(
+        "otm.swm.subscription.plan", string="Subscription Plan",
+        help="Which plan's price and duration Renew Subscription uses. "
+             "Leave empty to fall back to the global renewal-period "
+             "setting with no recorded amount.")
+    subscription_payment_ids = fields.One2many(
+        "otm.swm.subscription.payment", "member_id",
+        string="Payment History")
+    subscription_payment_count = fields.Integer(
+        compute="_compute_subscription_payment_count")
 
     @api.depends("subscription_active", "subscription_expiry")
     def _compute_subscription_valid(self):
@@ -176,20 +186,53 @@ class SwmAssociationMember(models.Model):
         for rec in self:
             rec.rfid_card_count = len(rec.rfid_card_ids)
 
+    def _compute_subscription_payment_count(self):
+        for rec in self:
+            rec.subscription_payment_count = len(rec.subscription_payment_ids)
+
     def action_renew_subscription(self):
-        """Extend subscription_expiry by the configured renewal period
-        from today (not from the old expiry - a lapsed member renewing
-        gets a fresh full period rather than back-dated coverage)."""
-        days = self.env["res.config.settings"].swm_get_int(
-            "subscription_renewal_days", 30)
-        new_expiry = fields.Date.add(
-            fields.Date.context_today(self), days=days)
-        self.write({
-            "subscription_active": True,
-            "subscription_expiry": new_expiry,
-            "subscription_last_reminder_date": False,
-        })
+        """Extend subscription_expiry using the assigned plan's duration
+        and current price (falling back to the global renewal-period
+        setting with no charge if no plan is assigned), extending from
+        today - not from the old expiry, so a lapsed member renewing
+        gets a fresh full period rather than back-dated coverage. Logs
+        exactly what was charged, snapshotted, so later editing the
+        plan's price never rewrites this history."""
+        Payment = self.env["otm.swm.subscription.payment"]
+        for rec in self:
+            plan = rec.subscription_plan_id
+            days = (plan.duration_days if plan else
+                    self.env["res.config.settings"].swm_get_int(
+                        "subscription_renewal_days", 30))
+            today = fields.Date.context_today(rec)
+            new_expiry = fields.Date.add(today, days=days)
+            rec.write({
+                "subscription_active": True,
+                "subscription_expiry": new_expiry,
+                "subscription_last_reminder_date": False,
+            })
+            Payment.create({
+                "member_id": rec.id,
+                "plan_id": plan.id if plan else False,
+                "plan_name": plan.name if plan else "(no plan / manual renewal)",
+                "amount": plan.price if plan else 0.0,
+                "currency_id": (plan.currency_id.id if plan
+                                else self.env.company.currency_id.id),
+                "payment_date": today,
+                "period_start": today,
+                "period_end": new_expiry,
+            })
         return True
+
+    def action_view_payment_history(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"Payment History — {self.name}",
+            "res_model": "otm.swm.subscription.payment",
+            "view_mode": "list,form",
+            "domain": [("member_id", "=", self.id)],
+        }
 
     def action_view_rfid_cards(self):
         self.ensure_one()

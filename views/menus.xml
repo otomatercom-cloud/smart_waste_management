@@ -65,6 +65,14 @@
               parent="menu_swm_structure" action="action_swm_rfid_card"
               groups="smart_waste_management.group_swm_supervisor"
               sequence="7"/>
+    <menuitem id="menu_swm_subscription_plans" name="Subscription Plans"
+              parent="menu_swm_structure" action="action_swm_subscription_plan"
+              groups="smart_waste_management.group_swm_manager"
+              sequence="8"/>
+    <menuitem id="menu_swm_subscription_payments" name="Subscription Payments"
+              parent="menu_swm_structure" action="action_swm_subscription_payment"
+              groups="smart_waste_management.group_swm_supervisor"
+              sequence="9"/>
 
     <!-- Staff -->
     <menuitem id="menu_swm_staff_root" name="Staff"

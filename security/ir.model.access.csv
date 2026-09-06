@@ -74,3 +74,11 @@ access_access_log_admin,swm.access.log.admin,model_otm_swm_bin_access_log,group_
 access_access_log_corp,swm.access.log.corp,model_otm_swm_bin_access_log,group_swm_corporation_manager,1,0,0,0
 access_access_log_mgr,swm.access.log.mgr,model_otm_swm_bin_access_log,group_swm_association_manager,1,0,0,0
 access_access_log_supervisor,swm.access.log.supervisor,model_otm_swm_bin_access_log,group_swm_supervisor,1,0,0,0
+access_subscription_plan_admin,swm.subscription.plan.admin,model_otm_swm_subscription_plan,group_swm_manager,1,1,1,1
+access_subscription_plan_corp,swm.subscription.plan.corp,model_otm_swm_subscription_plan,group_swm_corporation_manager,1,0,0,0
+access_subscription_plan_mgr,swm.subscription.plan.mgr,model_otm_swm_subscription_plan,group_swm_association_manager,1,0,0,0
+access_subscription_plan_supervisor,swm.subscription.plan.supervisor,model_otm_swm_subscription_plan,group_swm_supervisor,1,0,0,0
+access_subscription_payment_admin,swm.subscription.payment.admin,model_otm_swm_subscription_payment,group_swm_manager,1,1,1,1
+access_subscription_payment_corp,swm.subscription.payment.corp,model_otm_swm_subscription_payment,group_swm_corporation_manager,1,1,1,0
+access_subscription_payment_mgr,swm.subscription.payment.mgr,model_otm_swm_subscription_payment,group_swm_association_manager,1,1,1,0
+access_subscription_payment_supervisor,swm.subscription.payment.supervisor,model_otm_swm_subscription_payment,group_swm_supervisor,1,0,0,0

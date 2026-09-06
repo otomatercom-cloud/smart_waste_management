@@ -8,3 +8,4 @@ from . import test_portal_security
 from . import test_staff_qr
 from . import test_noise_handling
 from . import test_rfid_access
+from . import test_subscription_plans

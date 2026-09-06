@@ -4,6 +4,8 @@ from . import geography
 from . import association
 from . import street
 from . import rfid_card
+from . import subscription_plan
+from . import subscription_payment
 from . import smart_bin
 from . import sensor_reading
 from . import bin_access_log
