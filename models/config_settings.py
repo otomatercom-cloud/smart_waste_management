@@ -75,6 +75,19 @@ class ResConfigSettings(models.TransientModel):
              "stored on the bin's live status and on the access log "
              "row. Independent of RFID Access Control - a bin can "
              "report weight without having a lock, or vice versa.")
+    swm_heavy_weight_threshold_kg = fields.Float(
+        string="Heavy Dump Threshold (kg)", default=10.0,
+        config_parameter=PARAM_PREFIX + "heavy_weight_threshold_kg",
+        help="An access tap reporting at or above this weight is "
+             "flagged as a heavy dump on the dashboard - useful for "
+             "spotting bulk/commercial waste going into a household "
+             "bin, or a single large deposit worth a manual check.")
+    swm_subscription_reminder_days_before = fields.Integer(
+        string="Subscription Reminder (days before expiry)", default=5,
+        config_parameter=PARAM_PREFIX + "subscription_reminder_days_before",
+        help="A monthly cron sends a Telegram reminder to any connected "
+             "member whose subscription expires within this many days, "
+             "and to any member whose subscription has already lapsed.")
 
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,

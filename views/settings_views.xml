@@ -119,6 +119,14 @@
                                  help="Store weight_kg sent with an RFID tap on the bin's live status and the access log. Independent of RFID Access Control.">
                             <field name="swm_weight_capture_enabled"/>
                         </setting>
+                        <setting string="Heavy Dump Threshold (kg)"
+                                 help="Access taps at or above this weight are flagged as heavy dumps on the dashboard.">
+                            <field name="swm_heavy_weight_threshold_kg"/>
+                        </setting>
+                        <setting string="Subscription Reminder (days before expiry)"
+                                 help="A monthly cron reminds any connected member whose subscription expires within this many days, or has already lapsed, to renew.">
+                            <field name="swm_subscription_reminder_days_before"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

@@ -152,6 +152,12 @@ class SwmAssociationMember(models.Model):
         string="Subscription Valid",
         help="True when the member can open bins right now: Active is "
              "on AND (no expiry date, or the expiry date hasn't passed).")
+    subscription_last_reminder_date = fields.Date(
+        readonly=True, copy=False,
+        help="When the last renewal reminder was sent. Used only to "
+             "space reminders out - never sent more than once during "
+             "the pre-expiry window, and roughly monthly (not daily) "
+             "once lapsed.")
     rfid_card_ids = fields.One2many(
         "otm.swm.rfid.card", "member_id", string="RFID Cards")
     rfid_card_count = fields.Integer(
@@ -181,6 +187,7 @@ class SwmAssociationMember(models.Model):
         self.write({
             "subscription_active": True,
             "subscription_expiry": new_expiry,
+            "subscription_last_reminder_date": False,
         })
         return True
 
@@ -194,6 +201,56 @@ class SwmAssociationMember(models.Model):
             "domain": [("member_id", "=", self.id)],
             "context": {"default_member_id": self.id},
         }
+
+    @api.model
+    def cron_send_subscription_reminders(self):
+        """Nudge to renew: connected members whose subscription has
+        lapsed, or is about to within the configured window, get a
+        Telegram reminder. Runs daily but only actually messages
+        someone once per pre-expiry window and roughly once a month
+        while lapsed - subscription_last_reminder_date is what
+        prevents this from becoming a daily spam message. Access
+        itself is enforced live on every RFID tap regardless of
+        whether a reminder was ever sent."""
+        Settings = self.env["res.config.settings"]
+        days_before = Settings.swm_get_int(
+            "subscription_reminder_days_before", 5)
+        today = fields.Date.context_today(self)
+        soon = fields.Date.add(today, days=days_before)
+        window_start = fields.Date.subtract(today, days=days_before)
+        lapsed_repeat_after = fields.Date.subtract(today, days=30)
+
+        candidates = self.search([
+            ("subscription_expiry", "!=", False),
+            ("subscription_expiry", "<=", soon),
+            ("telegram_connected", "=", True),
+        ])
+        Bridge = self.env["software.telegram.message"].sudo()
+        for member in candidates:
+            last = member.subscription_last_reminder_date
+            lapsed = member.subscription_expiry < today
+            if lapsed:
+                if last and last > lapsed_repeat_after:
+                    continue  # already nagged this month
+            else:
+                if last and last >= window_start:
+                    continue  # already reminded during this window
+            text = (
+                (f"⚠️ Your waste bin subscription for "
+                 f"{member.association_id.name} lapsed on "
+                 f"{member.subscription_expiry}. Your RFID card will "
+                 f"not open bins until you renew. Please contact your "
+                 f"association to renew.")
+                if lapsed else
+                (f"🔔 Your waste bin subscription for "
+                 f"{member.association_id.name} expires on "
+                 f"{member.subscription_expiry}. Renew soon to keep "
+                 f"your RFID card working without interruption."))
+            Bridge.send_direct(
+                chat_id=member.telegram_chat_id, text=text,
+                event_type="swm_subscription_reminder",
+                res_model=self._name, res_id=member.id)
+            member.subscription_last_reminder_date = today
 
     def action_sync_telegram_from_bot(self):
         """Pull the linked chat_id from the shared software_telegram bot

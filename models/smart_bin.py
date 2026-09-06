@@ -432,6 +432,21 @@ class SwmBin(models.Model):
             "collection_pending", self, request=request)
         return request
 
+    @api.model
+    def get_dashboard_thresholds(self):
+        """Small, safely-RPC-able bundle of settings the OWL dashboard
+        needs. Reads through here rather than calling res.config.settings
+        methods directly from JS, since that model's own ACL is
+        normally restricted to users who can access Settings - this
+        model is already readable by anyone who can see the dashboard."""
+        raw = self.env["ir.config_parameter"].sudo().get_param(
+            "smart_waste_management.heavy_weight_threshold_kg", "10")
+        try:
+            threshold = float(raw)
+        except (TypeError, ValueError):
+            threshold = 10.0
+        return {"heavy_weight_threshold_kg": threshold}
+
     def check_rfid_access(self, card_uid, weight_kg=None):
         """Called by the IoT controller the instant a card is tapped.
         Returns a dict the ESP32 uses to decide whether to actuate the

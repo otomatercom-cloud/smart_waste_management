@@ -38,5 +38,14 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+        <record id="cron_swm_subscription_reminders" model="ir.cron">
+            <field name="name">SWM: Subscription Renewal Reminders (daily check, monthly-cycle window)</field>
+            <field name="model_id" ref="model_otm_swm_association_member"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_send_subscription_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

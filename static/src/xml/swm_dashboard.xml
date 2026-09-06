@@ -80,6 +80,32 @@
                         </div>
                         <div class="swm-tile-label">Avg Response</div>
                     </div>
+                    <div class="swm-tile swm-tile-primary"
+                         t-on-click="onKpiOpensToday">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.opens_today"/>
+                        <div class="swm-tile-label">Bin Opens Today</div>
+                    </div>
+                    <div class="swm-tile swm-tile-plain">
+                        <div class="swm-tile-num">
+                            <t t-esc="state.kpi.weight_today"/> kg
+                        </div>
+                        <div class="swm-tile-label">Weight Today</div>
+                    </div>
+                    <div class="swm-tile swm-tile-danger"
+                         t-on-click="onKpiHeavyToday">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.heavy_today"/>
+                        <div class="swm-tile-label">
+                            Heavy Dumps (&#8805;<t t-esc="state.heavyThreshold"/>kg)
+                        </div>
+                    </div>
+                    <div class="swm-tile swm-tile-warn"
+                         t-on-click="onKpiLapsedSubscriptions">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.subscriptions_lapsed"/>
+                        <div class="swm-tile-label">Lapsed Subscriptions</div>
+                    </div>
                 </div>
 
                 <div class="swm-dash-columns">
@@ -189,6 +215,81 @@
                             <tr t-if="!state.pendingBins.length">
                                 <td colspan="7" class="text-muted">
                                     No bins pending collection. 🎉
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Who opened bins — the RFID access log, granted taps
+                     only, newest first. Answers "who put waste in the
+                     bin" directly, with the weight recorded (if the
+                     device reported one) right alongside. -->
+                <div class="swm-dash-panel swm-dash-panel-wide">
+                    <h5>Who Opened Bins</h5>
+                    <table class="table table-sm swm-dash-table">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Bin</th>
+                                <th>Street</th>
+                                <th>Member</th>
+                                <th class="text-end">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.recentAccess"
+                                t-as="a" t-key="a.id"
+                                class="swm-dash-row"
+                                t-on-click="() => this.openAccessLogEntry(a.id)">
+                                <td t-esc="a.create_date"/>
+                                <td t-esc="a.bin_code"/>
+                                <td t-esc="a.street_id ? a.street_id[1] : '—'"/>
+                                <td t-esc="a.member_id ? a.member_id[1] : '—'"/>
+                                <td class="text-end"
+                                    t-esc="a.weight_kg ? a.weight_kg + ' kg' : '—'"/>
+                            </tr>
+                            <tr t-if="!state.recentAccess.length">
+                                <td colspan="5" class="text-muted">
+                                    No bin opens recorded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Heavy dumps — same log, filtered to a single tap at
+                     or above the configured threshold. -->
+                <div class="swm-dash-panel swm-dash-panel-wide">
+                    <h5>
+                        Heavy Dumps (&#8805;<t t-esc="state.heavyThreshold"/> kg
+                        in one tap)
+                    </h5>
+                    <table class="table table-sm swm-dash-table">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Bin</th>
+                                <th>Street</th>
+                                <th>Member</th>
+                                <th class="text-end">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.heavyDumps"
+                                t-as="h" t-key="h.id"
+                                class="swm-dash-row"
+                                t-on-click="() => this.openAccessLogEntry(h.id)">
+                                <td t-esc="h.create_date"/>
+                                <td t-esc="h.bin_code"/>
+                                <td t-esc="h.street_id ? h.street_id[1] : '—'"/>
+                                <td t-esc="h.member_id ? h.member_id[1] : '—'"/>
+                                <td class="text-end text-danger fw-bold"
+                                    t-esc="h.weight_kg + ' kg'"/>
+                            </tr>
+                            <tr t-if="!state.heavyDumps.length">
+                                <td colspan="5" class="text-muted">
+                                    No heavy dumps recorded.
                                 </td>
                             </tr>
                         </tbody>

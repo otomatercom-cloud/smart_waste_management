@@ -29,11 +29,18 @@ export class SwmDashboard extends Component {
                 escalated: 0,
                 complaints_open: 0,
                 avg_response: 0,
+                opens_today: 0,
+                weight_today: 0,
+                heavy_today: 0,
+                subscriptions_lapsed: 0,
             },
             byStatus: [],
             byCorporation: [],
             recentRequests: [],
             pendingBins: [],
+            recentAccess: [],
+            heavyDumps: [],
+            heavyThreshold: 10,
             isManager: false,
         });
         onWillStart(async () => {
@@ -159,6 +166,60 @@ export class SwmDashboard extends Component {
                 "fill_percentage", "status", "staff_id", "full_since"],
             { limit: 20, order: "full_since asc" },
         );
+
+        // ---- RFID access log: who opened bins, and how much they
+        // dumped in one go. Both panels read from the same log, split
+        // by outcome/weight rather than two separate models.
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayStartStr = todayStart.toISOString().slice(0, 19)
+            .replace("T", " ");
+
+        this.state.recentAccess = await orm.searchRead(
+            "otm.swm.bin.access.log",
+            [["granted", "=", true]],
+            ["bin_code", "street_id", "member_id", "weight_kg",
+                "create_date"],
+            { limit: 12, order: "create_date desc" },
+        );
+
+        const thresholds = await orm.call(
+            "otm.swm.bin", "get_dashboard_thresholds", [])
+            .catch(() => ({ heavy_weight_threshold_kg: 10 }));
+        const heavyThreshold = thresholds.heavy_weight_threshold_kg;
+        this.state.heavyThreshold = heavyThreshold;
+        this.state.heavyDumps = await orm.searchRead(
+            "otm.swm.bin.access.log",
+            [["granted", "=", true],
+                ["weight_kg", ">=", heavyThreshold]],
+            ["bin_code", "street_id", "member_id", "weight_kg",
+                "create_date"],
+            { limit: 12, order: "create_date desc" },
+        );
+
+        const weightGroups = await orm.formattedReadGroup(
+            "otm.swm.bin.access.log",
+            [["granted", "=", true],
+                ["create_date", ">=", todayStartStr]],
+            [],
+            ["weight_kg:sum"],
+        );
+        kpi.weight_today = weightGroups.length
+            ? Math.round((weightGroups[0]["weight_kg:sum"] || 0) * 10) / 10
+            : 0;
+        kpi.opens_today = await orm.searchCount(
+            "otm.swm.bin.access.log",
+            [["granted", "=", true], ["create_date", ">=", todayStartStr]]);
+        kpi.heavy_today = await orm.searchCount(
+            "otm.swm.bin.access.log",
+            [["granted", "=", true], ["create_date", ">=", todayStartStr],
+                ["weight_kg", ">=", heavyThreshold]]);
+
+        // ---- Subscription health
+        kpi.subscriptions_lapsed = await orm.searchCount(
+            "otm.swm.association.member",
+            [["subscription_valid", "=", false]]);
+
         this.state.loading = false;
     }
 
@@ -258,6 +319,54 @@ export class SwmDashboard extends Component {
     onCorpRow(corpId) {
         this.openBins(
             [["corporation_id", "=", corpId], ["active", "=", true]]);
+    }
+
+    onKpiOpensToday() {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Bin Opens Today",
+            res_model: "otm.swm.bin.access.log",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["granted", "=", true],
+                ["create_date", ">=",
+                    start.toISOString().slice(0, 19).replace("T", " ")]],
+            target: "current",
+        });
+    }
+
+    onKpiHeavyToday() {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Heavy Dumps",
+            res_model: "otm.swm.bin.access.log",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["granted", "=", true],
+                ["weight_kg", ">=", this.state.heavyThreshold]],
+            target: "current",
+        });
+    }
+
+    onKpiLapsedSubscriptions() {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Lapsed Subscriptions",
+            res_model: "otm.swm.association.member",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["subscription_valid", "=", false]],
+            target: "current",
+        });
+    }
+
+    openAccessLogEntry(id) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "otm.swm.bin.access.log",
+            res_id: id,
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 
     async refresh() {
