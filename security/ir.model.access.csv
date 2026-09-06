@@ -66,3 +66,11 @@ access_nrule_corp,swm.nrule.corp,model_otm_swm_notification_rule,group_swm_corpo
 access_nlog_admin,swm.nlog.admin,model_otm_swm_notification_log,group_swm_manager,1,1,1,1
 access_nlog_corp,swm.nlog.corp,model_otm_swm_notification_log,group_swm_corporation_manager,1,0,0,0
 access_tg_token_admin,swm.tg.token.admin,model_otm_swm_telegram_token,group_swm_manager,1,1,1,1
+access_rfid_card_admin,swm.rfid.card.admin,model_otm_swm_rfid_card,group_swm_manager,1,1,1,1
+access_rfid_card_corp,swm.rfid.card.corp,model_otm_swm_rfid_card,group_swm_corporation_manager,1,1,1,0
+access_rfid_card_mgr,swm.rfid.card.mgr,model_otm_swm_rfid_card,group_swm_association_manager,1,1,1,0
+access_rfid_card_supervisor,swm.rfid.card.supervisor,model_otm_swm_rfid_card,group_swm_supervisor,1,0,0,0
+access_access_log_admin,swm.access.log.admin,model_otm_swm_bin_access_log,group_swm_manager,1,1,1,1
+access_access_log_corp,swm.access.log.corp,model_otm_swm_bin_access_log,group_swm_corporation_manager,1,0,0,0
+access_access_log_mgr,swm.access.log.mgr,model_otm_swm_bin_access_log,group_swm_association_manager,1,0,0,0
+access_access_log_supervisor,swm.access.log.supervisor,model_otm_swm_bin_access_log,group_swm_supervisor,1,0,0,0

@@ -81,6 +81,13 @@
                     <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_access_log" type="object"
+                                class="oe_stat_button" icon="fa-id-card">
+                            <field name="access_log_count" widget="statinfo"
+                                   string="Access Taps"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="code" readonly="1"/></h1>
                         <h2><field name="name" placeholder="Bin Name"/></h2>
@@ -121,6 +128,23 @@
                             <field name="last_status_change"/>
                             <field name="full_since"/>
                             <field name="last_emptied_time"/>
+                        </group>
+                    </group>
+                    <group string="RFID / Weight Access Control"
+                           groups="smart_waste_management.group_swm_supervisor">
+                        <group string="Live">
+                            <field name="current_weight_kg"/>
+                            <field name="last_weight_time"/>
+                            <field name="last_access_member_id"/>
+                            <field name="last_access_time"/>
+                        </group>
+                        <group>
+                            <div class="text-muted" colspan="2">
+                                Enable/disable RFID access control, subscription
+                                enforcement, and weight capture globally under
+                                Configuration &gt; Settings. Issue cards under
+                                Structure &gt; RFID Cards.
+                            </div>
                         </group>
                     </group>
                     <group string="QR Pages">

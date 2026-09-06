@@ -186,6 +186,32 @@
                             <field name="notify_available"/>
                         </group>
                     </group>
+                    <group string="Subscription (RFID Bin Access)"
+                           groups="smart_waste_management.group_swm_supervisor">
+                        <group>
+                            <field name="subscription_active"/>
+                            <field name="subscription_expiry"/>
+                            <field name="subscription_valid"
+                                   widget="boolean_toggle" readonly="1"/>
+                        </group>
+                        <group>
+                            <button name="action_renew_subscription"
+                                    type="object" string="Renew Subscription"
+                                    class="btn-primary"
+                                    groups="smart_waste_management.group_swm_association_manager"/>
+                        </group>
+                    </group>
+                    <notebook groups="smart_waste_management.group_swm_supervisor">
+                        <page string="RFID Cards" name="rfid_cards">
+                            <field name="rfid_card_ids">
+                                <list editable="bottom">
+                                    <field name="card_uid"/>
+                                    <field name="issued_date"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

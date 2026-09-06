@@ -137,6 +137,64 @@ class SwmAssociationMember(models.Model):
     notify_available = fields.Boolean(
         string="Notify: Bin Available Again", default=False)
 
+    # ---- RFID / subscription access control ----
+    subscription_active = fields.Boolean(
+        default=True,
+        help="Master switch for this member's bin access. Off means "
+             "every RFID card issued to them is denied, regardless of "
+             "expiry date.")
+    subscription_expiry = fields.Date(
+        help="Access is denied once this date has passed, even if "
+             "Subscription Active is still on. Leave empty for no "
+             "expiry (access controlled by the Active switch alone).")
+    subscription_valid = fields.Boolean(
+        compute="_compute_subscription_valid", store=True,
+        string="Subscription Valid",
+        help="True when the member can open bins right now: Active is "
+             "on AND (no expiry date, or the expiry date hasn't passed).")
+    rfid_card_ids = fields.One2many(
+        "otm.swm.rfid.card", "member_id", string="RFID Cards")
+    rfid_card_count = fields.Integer(
+        compute="_compute_rfid_card_count")
+
+    @api.depends("subscription_active", "subscription_expiry")
+    def _compute_subscription_valid(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            rec.subscription_valid = bool(
+                rec.subscription_active
+                and (not rec.subscription_expiry
+                     or rec.subscription_expiry >= today))
+
+    def _compute_rfid_card_count(self):
+        for rec in self:
+            rec.rfid_card_count = len(rec.rfid_card_ids)
+
+    def action_renew_subscription(self):
+        """Extend subscription_expiry by the configured renewal period
+        from today (not from the old expiry - a lapsed member renewing
+        gets a fresh full period rather than back-dated coverage)."""
+        days = self.env["res.config.settings"].swm_get_int(
+            "subscription_renewal_days", 30)
+        new_expiry = fields.Date.add(
+            fields.Date.context_today(self), days=days)
+        self.write({
+            "subscription_active": True,
+            "subscription_expiry": new_expiry,
+        })
+        return True
+
+    def action_view_rfid_cards(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"RFID Cards — {self.name}",
+            "res_model": "otm.swm.rfid.card",
+            "view_mode": "list,form",
+            "domain": [("member_id", "=", self.id)],
+            "context": {"default_member_id": self.id},
+        }
+
     def action_sync_telegram_from_bot(self):
         """Pull the linked chat_id from the shared software_telegram bot
         (via this member's portal res.users) into this member's own

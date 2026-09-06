@@ -3,8 +3,10 @@ from . import config_settings
 from . import geography
 from . import association
 from . import street
+from . import rfid_card
 from . import smart_bin
 from . import sensor_reading
+from . import bin_access_log
 from . import staff
 from . import collection
 from . import complaint

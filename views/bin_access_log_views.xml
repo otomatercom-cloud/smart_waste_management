@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_swm_access_log_list" model="ir.ui.view">
+        <field name="name">otm.swm.bin.access.log.list</field>
+        <field name="model">otm.swm.bin.access.log</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false"
+                  decoration-success="granted"
+                  decoration-danger="not granted">
+                <field name="create_date" string="Tapped At"/>
+                <field name="bin_code"/>
+                <field name="street_id" optional="show"/>
+                <field name="member_id"/>
+                <field name="card_uid" optional="hide"/>
+                <field name="granted" widget="boolean_toggle"/>
+                <field name="deny_reason" optional="show"/>
+                <field name="weight_kg" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_access_log_form" model="ir.ui.view">
+        <field name="name">otm.swm.bin.access.log.form</field>
+        <field name="model">otm.swm.bin.access.log</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="bin_id"/>
+                            <field name="street_id"/>
+                            <field name="association_id"/>
+                            <field name="create_date" string="Tapped At"/>
+                        </group>
+                        <group>
+                            <field name="card_uid"/>
+                            <field name="card_id"/>
+                            <field name="member_id"/>
+                            <field name="granted"/>
+                            <field name="deny_reason"
+                                   invisible="granted"/>
+                            <field name="weight_kg"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_access_log_search" model="ir.ui.view">
+        <field name="name">otm.swm.bin.access.log.search</field>
+        <field name="model">otm.swm.bin.access.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="bin_code"/>
+                <field name="member_id"/>
+                <field name="card_uid"/>
+                <field name="street_id"/>
+                <field name="association_id"/>
+                <filter string="Granted" name="f_granted"
+                        domain="[('granted', '=', True)]"/>
+                <filter string="Denied" name="f_denied"
+                        domain="[('granted', '=', False)]"/>
+                <separator/>
+                <filter string="Bin" name="gb_bin"
+                        context="{'group_by': 'bin_id'}"/>
+                <filter string="Member" name="gb_member"
+                        context="{'group_by': 'member_id'}"/>
+                <filter string="Deny Reason" name="gb_reason"
+                        context="{'group_by': 'deny_reason'}"/>
+                <filter string="Date" name="gb_date"
+                        context="{'group_by': 'create_date:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_access_log" model="ir.actions.act_window">
+        <field name="name">Bin Access Log</field>
+        <field name="res_model">otm.swm.bin.access.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

@@ -31,6 +31,10 @@
               parent="menu_swm_operations" action="action_swm_reading"
               groups="smart_waste_management.group_swm_supervisor"
               sequence="5"/>
+    <menuitem id="menu_swm_access_log" name="Access Log"
+              parent="menu_swm_operations" action="action_swm_access_log"
+              groups="smart_waste_management.group_swm_supervisor"
+              sequence="6"/>
 
     <!-- Structure -->
     <menuitem id="menu_swm_structure" name="Structure"
@@ -57,6 +61,10 @@
     <menuitem id="menu_swm_streets" name="Streets"
               parent="menu_swm_structure" action="action_swm_street"
               sequence="6"/>
+    <menuitem id="menu_swm_rfid_cards" name="RFID Cards"
+              parent="menu_swm_structure" action="action_swm_rfid_card"
+              groups="smart_waste_management.group_swm_supervisor"
+              sequence="7"/>
 
     <!-- Staff -->
     <menuitem id="menu_swm_staff_root" name="Staff"

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_swm_rfid_card_list" model="ir.ui.view">
+        <field name="name">otm.swm.rfid.card.list</field>
+        <field name="model">otm.swm.rfid.card</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="not active">
+                <field name="card_uid"/>
+                <field name="member_id"/>
+                <field name="association_id"/>
+                <field name="issued_date"/>
+                <field name="access_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_swm_rfid_card_form" model="ir.ui.view">
+        <field name="name">otm.swm.rfid.card.form</field>
+        <field name="model">otm.swm.rfid.card</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_access_log" type="object"
+                                class="oe_stat_button" icon="fa-list">
+                            <field name="access_count" widget="statinfo"
+                                   string="Total Taps"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="card_uid"
+                                   placeholder="Card UID (from reader)"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="member_id"/>
+                            <field name="association_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="issued_date"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_swm_rfid_card_search" model="ir.ui.view">
+        <field name="name">otm.swm.rfid.card.search</field>
+        <field name="model">otm.swm.rfid.card</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="card_uid"/>
+                <field name="member_id"/>
+                <field name="association_id"/>
+                <filter string="Active" name="f_active"
+                        domain="[('active', '=', True)]"/>
+                <filter string="Deactivated" name="f_inactive"
+                        domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Member" name="gb_member"
+                        context="{'group_by': 'member_id'}"/>
+                <filter string="Association" name="gb_assoc"
+                        context="{'group_by': 'association_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_swm_rfid_card" model="ir.actions.act_window">
+        <field name="name">RFID Cards</field>
+        <field name="res_model">otm.swm.rfid.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_f_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Issue an RFID card to a member
+            </p>
+            <p>Enter the UID your ESP32 reader reports when the card is
+               tapped, and pick the member it belongs to. RFID access
+               control must also be switched on under Configuration.</p>
+        </field>
+    </record>
+
+</odoo>

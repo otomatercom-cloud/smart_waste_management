@@ -29,6 +29,8 @@ public bin QR status pages, complaints and collection history.
         'views/geography_views.xml',
         'views/association_views.xml',
         'views/street_views.xml',
+        'views/rfid_card_views.xml',
+        'views/bin_access_log_views.xml',
         'views/bin_views.xml',
         'views/sensor_reading_views.xml',
         'views/collection_views.xml',

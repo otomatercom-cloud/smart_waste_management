@@ -126,6 +126,33 @@ class SwmBin(models.Model):
     staff_qr_image_url = fields.Char(
         compute="_compute_public_url", string="Staff QR Code")
 
+    # ---- RFID lock / weight sensor (optional, settings-gated) ----
+    current_weight_kg = fields.Float(
+        string="Current Weight (kg)", digits=(6, 2), readonly=True)
+    last_weight_time = fields.Datetime(readonly=True)
+    last_access_member_id = fields.Many2one(
+        "otm.swm.association.member", readonly=True,
+        string="Last Opened By",
+        help="The member whose RFID card most recently opened this bin.")
+    last_access_time = fields.Datetime(readonly=True)
+    access_log_ids = fields.One2many(
+        "otm.swm.bin.access.log", "bin_id", string="Access Log")
+    access_log_count = fields.Integer(compute="_compute_access_log_count")
+
+    def _compute_access_log_count(self):
+        for rec in self:
+            rec.access_log_count = len(rec.access_log_ids)
+
+    def action_view_access_log(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"Access Log — {self.code}",
+            "res_model": "otm.swm.bin.access.log",
+            "view_mode": "list,form",
+            "domain": [("bin_id", "=", self.id)],
+        }
+
     _sql_constraints = [
         ("code_uniq", "unique(code)", "Bin code must be unique."),
         ("device_uniq", "unique(device_id)",
@@ -404,6 +431,74 @@ class SwmBin(models.Model):
         self.env["otm.swm.notification.rule"].sudo().process_event(
             "collection_pending", self, request=request)
         return request
+
+    def check_rfid_access(self, card_uid, weight_kg=None):
+        """Called by the IoT controller the instant a card is tapped.
+        Returns a dict the ESP32 uses to decide whether to actuate the
+        lock: {"access": "granted"|"denied", "reason": ..., ...}.
+        Every tap is logged (bin_access_log) except when the RFID
+        feature is globally switched off, in which case the lock is a
+        no-op passthrough and nothing is recorded."""
+        self.ensure_one()
+        Settings = self.env["res.config.settings"]
+        now = fields.Datetime.now()
+
+        # Weight capture is independent of the lock feature - a bin can
+        # have a load cell without RFID, or vice versa.
+        if weight_kg is not None and Settings.swm_get_bool(
+                "weight_capture_enabled", False):
+            self.write({
+                "current_weight_kg": weight_kg,
+                "last_weight_time": now,
+            })
+
+        if not Settings.swm_get_bool("rfid_enabled", False):
+            # Feature off: always open, no card/subscription checks, no
+            # log entry - this bin behaves exactly as it did before the
+            # lock was ever installed.
+            return {"access": "granted", "reason": "rfid_feature_disabled"}
+
+        Card = self.env["otm.swm.rfid.card"].sudo()
+        card = Card.search([("card_uid", "=", card_uid)], limit=1)
+        member = card.member_id if card else self.env[
+            "otm.swm.association.member"]
+
+        granted = False
+        reason = "card_unknown"
+        member_name = ""
+        if not card:
+            reason = "card_unknown"
+        elif not card.active:
+            reason = "card_inactive"
+        elif Settings.swm_get_bool("subscription_enforcement_enabled", True) \
+                and not member.subscription_valid:
+            reason = "subscription_expired"
+        else:
+            granted = True
+            reason = "granted"
+            member_name = member.name
+
+        self.env["otm.swm.bin.access.log"].sudo().create({
+            "bin_id": self.id,
+            "card_uid": card_uid,
+            "card_id": card.id if card else False,
+            "member_id": member.id if member else False,
+            "granted": granted,
+            "deny_reason": False if granted else reason,
+            "weight_kg": weight_kg if weight_kg is not None else 0.0,
+        })
+
+        if granted:
+            self.write({
+                "last_access_member_id": member.id,
+                "last_access_time": now,
+            })
+
+        return {
+            "access": "granted" if granted else "denied",
+            "reason": reason,
+            "member_name": member_name,
+        }
 
     def _resolve_staff(self):
         """Bin-level assignment wins, then street, association, ward,

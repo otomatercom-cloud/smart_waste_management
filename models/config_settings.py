@@ -47,6 +47,35 @@ class ResConfigSettings(models.TransientModel):
              "Full or Collected. Protects against ultrasonic noise firing "
              "false requests, completions, and Telegram alerts. 1 "
              "disables; 2-3 recommended for HC-SR04 sensors.")
+
+    # ---- RFID lock / subscription / weight capture ----
+    swm_rfid_enabled = fields.Boolean(
+        string="RFID Access Control", default=False,
+        config_parameter=PARAM_PREFIX + "rfid_enabled",
+        help="When off, every bin's RFID lock (if installed) opens for "
+             "any tap with no checks and nothing is logged - the bin "
+             "behaves as if no lock were installed at all. Turn on once "
+             "cards have been issued under Structure > RFID Cards.")
+    swm_subscription_enforcement_enabled = fields.Boolean(
+        string="Enforce Subscription on Access", default=True,
+        config_parameter=PARAM_PREFIX + "subscription_enforcement_enabled",
+        help="Only takes effect when RFID Access Control is on. When on, "
+             "a registered card whose member's subscription has lapsed "
+             "is denied. When off, any active registered card opens the "
+             "bin regardless of subscription status (still logged).")
+    swm_subscription_renewal_days = fields.Integer(
+        string="Subscription Renewal Period (days)", default=30,
+        config_parameter=PARAM_PREFIX + "subscription_renewal_days",
+        help="How far the 'Renew Subscription' button on a member "
+             "extends their expiry date, counted from today.")
+    swm_weight_capture_enabled = fields.Boolean(
+        string="Weight Capture", default=False,
+        config_parameter=PARAM_PREFIX + "weight_capture_enabled",
+        help="When on, a weight_kg value sent with an RFID tap is "
+             "stored on the bin's live status and on the access log "
+             "row. Independent of RFID Access Control - a bin can "
+             "report weight without having a lock, or vice versa.")
+
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,
         config_parameter=PARAM_PREFIX + "reading_retention_days")

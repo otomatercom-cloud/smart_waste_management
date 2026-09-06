@@ -17,6 +17,39 @@ def _json_response(payload, status=200):
     )
 
 
+def _authenticate_bin(env, payload):
+    """Shared device+bin+token check used by every IoT endpoint.
+    Returns (bin_rec, error_response_or_None)."""
+    device_id = str(payload.get("device_id") or "").strip()
+    bin_code = str(payload.get("bin_code") or "").strip()
+    token = str(
+        payload.get("api_token")
+        or request.httprequest.headers.get("X-SWM-Token") or "").strip()
+
+    if not (device_id and bin_code and token):
+        return None, _json_response(
+            {"result": "error",
+             "message": "device_id, bin_code and api_token required"}, 400)
+
+    bin_rec = env["otm.swm.bin"].search([("code", "=", bin_code)], limit=1)
+    valid = bool(
+        bin_rec
+        and bin_rec.device_id == device_id
+        and bin_rec.api_token
+        and hmac.compare_digest(bin_rec.api_token, token))
+    if not valid:
+        _logger.warning(
+            "SWM IoT auth failure: device=%s bin=%s ip=%s",
+            device_id, bin_code, request.httprequest.remote_addr)
+        # Do not leak which of the three factors was wrong.
+        return None, _json_response(
+            {"result": "error", "message": "Authentication failed"}, 401)
+    if not bin_rec.active:
+        return None, _json_response(
+            {"result": "error", "message": "Bin is inactive"}, 403)
+    return bin_rec, None
+
+
 class SwmIotApi(http.Controller):
     """Plain-HTTP JSON endpoint for ESP32 devices.
 
@@ -35,37 +68,10 @@ class SwmIotApi(http.Controller):
             return _json_response(
                 {"result": "error", "message": "Invalid JSON body"}, 400)
 
-        device_id = str(payload.get("device_id") or "").strip()
-        bin_code = str(payload.get("bin_code") or "").strip()
-        token = str(
-            payload.get("api_token")
-            or request.httprequest.headers.get("X-SWM-Token") or "").strip()
-
-        if not (device_id and bin_code and token):
-            return _json_response(
-                {"result": "error",
-                 "message": "device_id, bin_code and api_token required"},
-                400)
-
         env = request.env(su=True)
-        bin_rec = env["otm.swm.bin"].search(
-            [("code", "=", bin_code)], limit=1)
-        valid = bool(
-            bin_rec
-            and bin_rec.device_id == device_id
-            and bin_rec.api_token
-            and hmac.compare_digest(bin_rec.api_token, token))
-        if not valid:
-            _logger.warning(
-                "SWM IoT auth failure: device=%s bin=%s ip=%s",
-                device_id, bin_code,
-                request.httprequest.remote_addr)
-            # Do not leak which of the three factors was wrong.
-            return _json_response(
-                {"result": "error", "message": "Authentication failed"}, 401)
-        if not bin_rec.active:
-            return _json_response(
-                {"result": "error", "message": "Bin is inactive"}, 403)
+        bin_rec, err = _authenticate_bin(env, payload)
+        if err:
+            return err
 
         def _num(key):
             val = payload.get(key)
@@ -84,3 +90,42 @@ class SwmIotApi(http.Controller):
         )
         status = 200 if result.get("result") == "ok" else 400
         return _json_response(result, status)
+
+    @http.route("/api/smart_waste/bin/rfid-access", type="http",
+                auth="none", methods=["POST"], csrf=False,
+                save_session=False)
+    def bin_rfid_access(self, **kwargs):
+        """Called by the ESP32 the instant an RFID card is tapped, BEFORE
+        the lock/servo actuates. The device must only open the bin if
+        this returns access: "granted" - the physical lock decision
+        lives here, not on the device, so revoking a card or letting a
+        subscription lapse takes effect instantly without reflashing
+        anything.
+        """
+        try:
+            payload = json.loads(
+                request.httprequest.get_data(as_text=True) or "{}")
+        except (ValueError, TypeError):
+            return _json_response(
+                {"result": "error", "message": "Invalid JSON body"}, 400)
+
+        env = request.env(su=True)
+        bin_rec, err = _authenticate_bin(env, payload)
+        if err:
+            return err
+
+        card_uid = str(payload.get("card_uid") or "").strip()
+        if not card_uid:
+            return _json_response(
+                {"result": "error", "message": "card_uid required"}, 400)
+
+        weight_kg = None
+        raw_weight = payload.get("weight_kg")
+        if raw_weight is not None:
+            try:
+                weight_kg = float(raw_weight)
+            except (TypeError, ValueError):
+                weight_kg = None
+
+        outcome = bin_rec.check_rfid_access(card_uid, weight_kg=weight_kg)
+        return _json_response({"result": "ok", **outcome}, 200)
