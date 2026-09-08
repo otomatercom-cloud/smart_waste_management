@@ -28,6 +28,28 @@ class SwmStaff(models.Model):
         "otm.swm.staff", string="Supervisor",
         domain=[("is_supervisor", "=", True)])
     active = fields.Boolean(default=True)
+    rfid_card_ids = fields.One2many(
+        "otm.swm.rfid.card", "staff_id", string="RFID Cards",
+        help="Cards issued to this staff/supervisor always open a bin, "
+             "including while it's full - unlike a member card, which "
+             "is denied on a full bin so a collector can service it.")
+    rfid_card_count = fields.Integer(compute="_compute_rfid_card_count")
+
+    def _compute_rfid_card_count(self):
+        for rec in self:
+            rec.rfid_card_count = len(rec.rfid_card_ids)
+
+    def action_view_rfid_cards(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"RFID Cards — {self.name}",
+            "res_model": "otm.swm.rfid.card",
+            "view_mode": "list,form",
+            "domain": [("staff_id", "=", self.id)],
+            "context": {"default_staff_id": self.id,
+                        "default_holder_type": "staff"},
+        }
 
     corporation_ids = fields.Many2many(
         "otm.swm.corporation", string="Assigned Corporations")

@@ -7,11 +7,14 @@
         <field name="arch" type="xml">
             <list create="false" edit="false"
                   decoration-success="granted"
+                  decoration-info="granted and staff_id"
                   decoration-danger="not granted">
                 <field name="create_date" string="Tapped At"/>
                 <field name="bin_code"/>
                 <field name="street_id" optional="show"/>
-                <field name="member_id"/>
+                <field name="holder_name"/>
+                <field name="member_id" optional="hide"/>
+                <field name="staff_id" optional="hide"/>
                 <field name="card_uid" optional="hide"/>
                 <field name="granted" widget="boolean_toggle"/>
                 <field name="deny_reason" optional="show"/>
@@ -36,7 +39,9 @@
                         <group>
                             <field name="card_uid"/>
                             <field name="card_id"/>
+                            <field name="holder_name"/>
                             <field name="member_id"/>
+                            <field name="staff_id"/>
                             <field name="granted"/>
                             <field name="deny_reason"
                                    invisible="granted"/>
@@ -54,7 +59,9 @@
         <field name="arch" type="xml">
             <search>
                 <field name="bin_code"/>
+                <field name="holder_name"/>
                 <field name="member_id"/>
+                <field name="staff_id"/>
                 <field name="card_uid"/>
                 <field name="street_id"/>
                 <field name="association_id"/>
@@ -62,11 +69,21 @@
                         domain="[('granted', '=', True)]"/>
                 <filter string="Denied" name="f_denied"
                         domain="[('granted', '=', False)]"/>
+                <filter string="Bin Full - Staff Only Denial"
+                        name="f_full_denial"
+                        domain="[('deny_reason', '=', 'bin_full_staff_only')]"/>
+                <separator/>
+                <filter string="By Staff/Supervisor" name="f_staff_opens"
+                        domain="[('staff_id', '!=', False)]"/>
+                <filter string="By Member" name="f_member_opens"
+                        domain="[('member_id', '!=', False)]"/>
                 <separator/>
                 <filter string="Bin" name="gb_bin"
                         context="{'group_by': 'bin_id'}"/>
                 <filter string="Member" name="gb_member"
                         context="{'group_by': 'member_id'}"/>
+                <filter string="Staff" name="gb_staff"
+                        context="{'group_by': 'staff_id'}"/>
                 <filter string="Deny Reason" name="gb_reason"
                         context="{'group_by': 'deny_reason'}"/>
                 <filter string="Date" name="gb_date"

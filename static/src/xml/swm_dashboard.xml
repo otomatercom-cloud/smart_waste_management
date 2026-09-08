@@ -245,7 +245,12 @@
                                 <td t-esc="a.create_date"/>
                                 <td t-esc="a.bin_code"/>
                                 <td t-esc="a.street_id ? a.street_id[1] : '—'"/>
-                                <td t-esc="a.member_id ? a.member_id[1] : '—'"/>
+                                <td>
+                                    <t t-esc="a.holder_name || '—'"/>
+                                    <span t-if="a.staff_id"
+                                          class="badge bg-info ms-1"
+                                          style="font-size:0.65rem;">staff</span>
+                                </td>
                                 <td class="text-end"
                                     t-esc="a.weight_kg ? a.weight_kg + ' kg' : '—'"/>
                             </tr>
@@ -283,7 +288,7 @@
                                 <td t-esc="h.create_date"/>
                                 <td t-esc="h.bin_code"/>
                                 <td t-esc="h.street_id ? h.street_id[1] : '—'"/>
-                                <td t-esc="h.member_id ? h.member_id[1] : '—'"/>
+                                <td t-esc="h.holder_name || '—'"/>
                                 <td class="text-end text-danger fw-bold"
                                     t-esc="h.weight_kg + ' kg'"/>
                             </tr>

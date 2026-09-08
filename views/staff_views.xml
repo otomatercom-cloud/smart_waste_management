@@ -28,6 +28,11 @@
                             <field name="open_request_count" widget="statinfo"
                                    string="Open Requests"/>
                         </button>
+                        <button name="action_view_rfid_cards" type="object"
+                                class="oe_stat_button" icon="fa-id-card">
+                            <field name="rfid_card_count" widget="statinfo"
+                                   string="RFID Cards"/>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="Staff Name"/></h1>
@@ -64,6 +69,23 @@
                         <field name="street_ids" widget="many2many_tags"/>
                         <field name="bin_ids" widget="many2many_tags"/>
                     </group>
+                    <notebook>
+                        <page string="RFID Cards" name="rfid_cards">
+                            <p class="text-muted">
+                                Cards issued here always open a bin — even
+                                while it's full — and skip subscription
+                                checks entirely.
+                            </p>
+                            <field name="rfid_card_ids"
+                                   context="{'default_holder_type': 'staff'}">
+                                <list editable="bottom">
+                                    <field name="card_uid"/>
+                                    <field name="issued_date"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

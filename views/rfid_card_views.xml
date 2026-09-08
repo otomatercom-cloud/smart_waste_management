@@ -5,9 +5,11 @@
         <field name="name">otm.swm.rfid.card.list</field>
         <field name="model">otm.swm.rfid.card</field>
         <field name="arch" type="xml">
-            <list decoration-muted="not active">
+            <list decoration-muted="not active"
+                  decoration-info="holder_type == 'staff'">
                 <field name="card_uid"/>
-                <field name="member_id"/>
+                <field name="holder_type"/>
+                <field name="holder_name"/>
                 <field name="association_id"/>
                 <field name="issued_date"/>
                 <field name="access_count"/>
@@ -35,14 +37,28 @@
                     </div>
                     <group>
                         <group>
-                            <field name="member_id"/>
-                            <field name="association_id" readonly="1"/>
+                            <field name="holder_type" widget="radio"/>
+                            <field name="member_id"
+                                   invisible="holder_type != 'member'"
+                                   required="holder_type == 'member'"/>
+                            <field name="staff_id"
+                                   invisible="holder_type != 'staff'"
+                                   required="holder_type == 'staff'"/>
+                            <field name="association_id" readonly="1"
+                                   invisible="holder_type != 'member'"/>
                         </group>
                         <group>
                             <field name="issued_date"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                     </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="holder_type != 'staff'">
+                        Staff/supervisor cards always open the bin,
+                        including while it's Full — that's what lets a
+                        collector service and empty it. They also skip
+                        subscription checks entirely.
+                    </div>
                     <group string="Notes">
                         <field name="notes" nolabel="1"/>
                     </group>
@@ -57,15 +73,22 @@
         <field name="arch" type="xml">
             <search>
                 <field name="card_uid"/>
+                <field name="holder_name"/>
                 <field name="member_id"/>
+                <field name="staff_id"/>
                 <field name="association_id"/>
                 <filter string="Active" name="f_active"
                         domain="[('active', '=', True)]"/>
                 <filter string="Deactivated" name="f_inactive"
                         domain="[('active', '=', False)]"/>
                 <separator/>
-                <filter string="Member" name="gb_member"
-                        context="{'group_by': 'member_id'}"/>
+                <filter string="Member Cards" name="f_member"
+                        domain="[('holder_type', '=', 'member')]"/>
+                <filter string="Staff/Supervisor Cards" name="f_staff"
+                        domain="[('holder_type', '=', 'staff')]"/>
+                <separator/>
+                <filter string="Holder Type" name="gb_type"
+                        context="{'group_by': 'holder_type'}"/>
                 <filter string="Association" name="gb_assoc"
                         context="{'group_by': 'association_id'}"/>
             </search>
@@ -79,11 +102,14 @@
         <field name="context">{'search_default_f_active': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Issue an RFID card to a member
+                Issue an RFID card to a member, staff, or supervisor
             </p>
             <p>Enter the UID your ESP32 reader reports when the card is
-               tapped, and pick the member it belongs to. RFID access
-               control must also be switched on under Configuration.</p>
+               tapped. Member cards are checked against their subscription
+               and denied while a bin is full; staff/supervisor cards
+               always open the bin, including while full, so a collector
+               can service it. RFID access control must also be switched
+               on under Configuration.</p>
         </field>
     </record>
 

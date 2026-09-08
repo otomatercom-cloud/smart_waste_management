@@ -107,6 +107,10 @@
                                  help="Master switch. Off = every RFID-equipped bin opens for any tap, no checks, nothing logged - as if no lock were installed. Turn on once cards are issued under Structure &gt; RFID Cards.">
                             <field name="swm_rfid_enabled"/>
                         </setting>
+                        <setting string="Lock Full Bins to Staff Only"
+                                 help="A member's card is denied while the bin is Full/Pending/In Progress - only staff or supervisor cards open it then, so a collector can service and empty it.">
+                            <field name="swm_lock_when_full_enabled"/>
+                        </setting>
                         <setting string="Enforce Subscription on Access"
                                  help="Only applies when RFID Access Control is on. On: a lapsed member's card is denied. Off: any active registered card opens the bin regardless of subscription status (still logged).">
                             <field name="swm_subscription_enforcement_enabled"/>

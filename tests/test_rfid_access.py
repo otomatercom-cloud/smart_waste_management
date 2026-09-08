@@ -124,3 +124,91 @@ class TestRfidAccess(SwmCommon):
                 "card_uid": "AA:BB:CC:DD",  # already used by self.card
                 "member_id": self.member.id,
             })
+
+
+@tagged("post_install", "-at_install", "swm")
+class TestRfidLockWhenFull(SwmCommon):
+
+    def setUp(self):
+        super().setUp()
+        self.member = self.env["otm.swm.association.member"].create({
+            "name": "Lockout Test Member",
+            "association_id": self.assoc.id,
+            "street_id": self.street.id,
+        })
+        self.member_card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "MEMBER-CARD-1",
+            "holder_type": "member",
+            "member_id": self.member.id,
+        })
+        self.staff_card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "STAFF-CARD-1",
+            "holder_type": "staff",
+            "staff_id": self.staff.id,
+        })
+        self.set_param("rfid_enabled", "True")
+        self.set_param("status_confirm_count", "1")
+
+    def _make_full(self):
+        self.bin.process_reading(fill_percentage=97)
+        self.assertEqual(self.bin.status, "collection_pending")
+
+    def test_member_denied_when_bin_full_and_lock_enabled(self):
+        self.set_param("lock_when_full_enabled", "True")
+        self._make_full()
+        result = self.bin.check_rfid_access("MEMBER-CARD-1")
+        self.assertEqual(result["access"], "denied")
+        self.assertEqual(result["reason"], "bin_full_staff_only")
+
+    def test_staff_always_granted_even_when_full(self):
+        self.set_param("lock_when_full_enabled", "True")
+        self._make_full()
+        result = self.bin.check_rfid_access("STAFF-CARD-1")
+        self.assertEqual(result["access"], "granted")
+        self.assertEqual(self.bin.last_access_staff_id, self.staff)
+        self.assertFalse(self.bin.last_access_member_id)
+
+    def test_member_granted_when_bin_not_full(self):
+        result = self.bin.check_rfid_access("MEMBER-CARD-1")
+        self.assertEqual(result["access"], "granted")
+        self.assertEqual(self.bin.last_access_member_id, self.member)
+
+    def test_member_allowed_on_full_bin_when_toggle_off(self):
+        self.set_param("lock_when_full_enabled", "False")
+        self._make_full()
+        result = self.bin.check_rfid_access("MEMBER-CARD-1")
+        self.assertEqual(result["access"], "granted")
+
+    def test_staff_card_bypasses_subscription_check(self):
+        self.set_param("subscription_enforcement_enabled", "True")
+        self.staff_card.staff_id  # sanity: card resolved to staff
+        # Staff cards have no subscription concept at all - confirm a
+        # staff card opens even with the strictest enforcement on and
+        # no subscription fields ever touched.
+        result = self.bin.check_rfid_access("STAFF-CARD-1")
+        self.assertEqual(result["access"], "granted")
+
+    def test_log_records_staff_id_and_holder_name(self):
+        self._make_full()
+        self.bin.check_rfid_access("STAFF-CARD-1")
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "STAFF-CARD-1")], limit=1)
+        self.assertEqual(log.staff_id, self.staff)
+        self.assertFalse(log.member_id)
+        self.assertEqual(log.holder_name, self.staff.name)
+        self.assertTrue(log.granted)
+
+    def test_card_requires_exactly_one_holder(self):
+        with self.assertRaises(Exception):
+            self.env["otm.swm.rfid.card"].create({
+                "card_uid": "BAD-CARD-1",
+                "holder_type": "member",
+                # no member_id set - should raise
+            })
+        with self.assertRaises(Exception):
+            self.env["otm.swm.rfid.card"].create({
+                "card_uid": "BAD-CARD-2",
+                "holder_type": "member",
+                "member_id": self.member.id,
+                "staff_id": self.staff.id,  # both set - should raise
+            })

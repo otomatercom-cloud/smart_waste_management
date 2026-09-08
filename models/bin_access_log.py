@@ -5,6 +5,7 @@ DENY_REASONS = [
     ("card_unknown", "Card Not Registered"),
     ("card_inactive", "Card Deactivated"),
     ("subscription_expired", "Subscription Expired/Inactive"),
+    ("bin_full_staff_only", "Bin Full - Staff/Supervisor Only"),
 ]
 
 
@@ -23,10 +24,17 @@ class SwmBinAccessLog(models.Model):
     card_id = fields.Many2one("otm.swm.rfid.card", ondelete="set null")
     member_id = fields.Many2one(
         "otm.swm.association.member", ondelete="set null",
-        help="Who tapped the card - resolved from the card at the time "
-             "of the tap. This is the answer to \"who put waste in the "
-             "bin\": every open is tied to the person whose card opened "
-             "it.")
+        help="Who tapped the card, if it was a member card - resolved "
+             "from the card at the time of the tap. This is the answer "
+             "to \"who put waste in the bin\" for residents.")
+    staff_id = fields.Many2one(
+        "otm.swm.staff", ondelete="set null",
+        help="Who tapped the card, if it was a staff/supervisor card - "
+             "these can open a bin even while full, to service it.")
+    holder_name = fields.Char(
+        help="Snapshot of the card holder's name at the time of the "
+             "tap - survives the member/staff record or card being "
+             "deleted later.")
     granted = fields.Boolean(index=True)
     deny_reason = fields.Selection(DENY_REASONS)
     weight_kg = fields.Float(

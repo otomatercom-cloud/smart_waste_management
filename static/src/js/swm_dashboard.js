@@ -178,8 +178,8 @@ export class SwmDashboard extends Component {
         this.state.recentAccess = await orm.searchRead(
             "otm.swm.bin.access.log",
             [["granted", "=", true]],
-            ["bin_code", "street_id", "member_id", "weight_kg",
-                "create_date"],
+            ["bin_code", "street_id", "holder_name", "staff_id",
+                "weight_kg", "create_date"],
             { limit: 12, order: "create_date desc" },
         );
 
@@ -192,8 +192,8 @@ export class SwmDashboard extends Component {
             "otm.swm.bin.access.log",
             [["granted", "=", true],
                 ["weight_kg", ">=", heavyThreshold]],
-            ["bin_code", "street_id", "member_id", "weight_kg",
-                "create_date"],
+            ["bin_code", "street_id", "holder_name", "staff_id",
+                "weight_kg", "create_date"],
             { limit: 12, order: "create_date desc" },
         );
 

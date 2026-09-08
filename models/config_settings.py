@@ -56,6 +56,15 @@ class ResConfigSettings(models.TransientModel):
              "any tap with no checks and nothing is logged - the bin "
              "behaves as if no lock were installed at all. Turn on once "
              "cards have been issued under Structure > RFID Cards.")
+    swm_lock_when_full_enabled = fields.Boolean(
+        string="Lock Full Bins to Staff Only", default=True,
+        config_parameter=PARAM_PREFIX + "lock_when_full_enabled",
+        help="Only applies when RFID Access Control is on. When on, a "
+             "member's card is denied while the bin is Full / Collection "
+             "Pending / Collection In Progress - only a staff or "
+             "supervisor card opens it in that state, so a collector "
+             "can service and empty it. When off, a valid member card "
+             "always opens the bin regardless of fill status.")
     swm_subscription_enforcement_enabled = fields.Boolean(
         string="Enforce Subscription on Access", default=True,
         config_parameter=PARAM_PREFIX + "subscription_enforcement_enabled",

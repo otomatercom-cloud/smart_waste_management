@@ -135,7 +135,7 @@
                         <group string="Live">
                             <field name="current_weight_kg"/>
                             <field name="last_weight_time"/>
-                            <field name="last_access_member_id"/>
+                            <field name="last_access_name"/>
                             <field name="last_access_time"/>
                         </group>
                         <group>

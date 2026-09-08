@@ -132,8 +132,19 @@ class SwmBin(models.Model):
     last_weight_time = fields.Datetime(readonly=True)
     last_access_member_id = fields.Many2one(
         "otm.swm.association.member", readonly=True,
-        string="Last Opened By",
-        help="The member whose RFID card most recently opened this bin.")
+        string="Last Opened By (Member)",
+        help="Set only when a member card opened this bin.")
+    last_access_staff_id = fields.Many2one(
+        "otm.swm.staff", readonly=True,
+        string="Last Opened By (Staff)",
+        help="Set only when a staff/supervisor card opened this bin - "
+             "including opens while the bin was full, which a member "
+             "card cannot do.")
+    last_access_name = fields.Char(
+        readonly=True,
+        help="Name of whoever's card most recently opened this bin, "
+             "member or staff - use this for a simple display; the two "
+             "fields above are for filtering by holder type.")
     last_access_time = fields.Datetime(readonly=True)
     access_log_ids = fields.One2many(
         "otm.swm.bin.access.log", "bin_id", string="Access Log")
@@ -453,7 +464,14 @@ class SwmBin(models.Model):
         lock: {"access": "granted"|"denied", "reason": ..., ...}.
         Every tap is logged (bin_access_log) except when the RFID
         feature is globally switched off, in which case the lock is a
-        no-op passthrough and nothing is recorded."""
+        no-op passthrough and nothing is recorded.
+
+        Member cards are denied while the bin is full-like (Full /
+        Collection Pending / Collection In Progress) when the "Lock
+        Full Bins to Staff Only" setting is on - only a staff or
+        supervisor card opens it in that state, so a collector can
+        service and empty it without residents adding more waste to an
+        already-full bin in the meantime."""
         self.ensure_one()
         Settings = self.env["res.config.settings"]
         now = fields.Datetime.now()
@@ -477,27 +495,43 @@ class SwmBin(models.Model):
         card = Card.search([("card_uid", "=", card_uid)], limit=1)
         member = card.member_id if card else self.env[
             "otm.swm.association.member"]
+        staff = card.staff_id if card else self.env["otm.swm.staff"]
+        is_staff_card = bool(card and card.holder_type == "staff")
+        bin_is_full_like = self.status in FULL_LIKE
+        lock_when_full = Settings.swm_get_bool("lock_when_full_enabled", True)
 
         granted = False
         reason = "card_unknown"
-        member_name = ""
+        holder_name = ""
         if not card:
             reason = "card_unknown"
         elif not card.active:
             reason = "card_inactive"
+        elif is_staff_card:
+            # Staff/supervisor cards always open the bin - including
+            # while full, which is precisely how they service it - and
+            # are never subject to subscription enforcement.
+            granted = True
+            reason = "granted"
+            holder_name = staff.name
+        elif bin_is_full_like and lock_when_full:
+            granted = False
+            reason = "bin_full_staff_only"
         elif Settings.swm_get_bool("subscription_enforcement_enabled", True) \
                 and not member.subscription_valid:
             reason = "subscription_expired"
         else:
             granted = True
             reason = "granted"
-            member_name = member.name
+            holder_name = member.name
 
         self.env["otm.swm.bin.access.log"].sudo().create({
             "bin_id": self.id,
             "card_uid": card_uid,
             "card_id": card.id if card else False,
             "member_id": member.id if member else False,
+            "staff_id": staff.id if staff else False,
+            "holder_name": holder_name or (card.holder_name if card else ""),
             "granted": granted,
             "deny_reason": False if granted else reason,
             "weight_kg": weight_kg if weight_kg is not None else 0.0,
@@ -505,14 +539,17 @@ class SwmBin(models.Model):
 
         if granted:
             self.write({
-                "last_access_member_id": member.id,
+                "last_access_member_id": member.id if not is_staff_card
+                                         else False,
+                "last_access_staff_id": staff.id if is_staff_card else False,
+                "last_access_name": holder_name,
                 "last_access_time": now,
             })
 
         return {
             "access": "granted" if granted else "denied",
             "reason": reason,
-            "member_name": member_name,
+            "member_name": holder_name,
         }
 
     def _resolve_staff(self):
