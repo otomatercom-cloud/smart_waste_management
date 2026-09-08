@@ -88,6 +88,15 @@ class ResConfigSettings(models.TransientModel):
         help="A monthly cron sends a Telegram reminder to any connected "
              "member whose subscription expires within this many days, "
              "and to any member whose subscription has already lapsed.")
+    swm_underpayment_alerts_enabled = fields.Boolean(
+        string="Underpayment Alerts", default=True,
+        config_parameter=PARAM_PREFIX + "underpayment_alerts_enabled",
+        help="When on, a member is sent a Telegram notice the moment a "
+             "recorded payment is less than their plan's price at the "
+             "time - e.g. a partial or discounted amount entered by "
+             "hand under Subscription Payments. Renewals made through "
+             "the Renew Subscription button always charge the full "
+             "price and never trigger this.")
 
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,

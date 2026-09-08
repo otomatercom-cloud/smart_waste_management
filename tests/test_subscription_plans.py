@@ -75,3 +75,43 @@ class TestSubscriptionPlans(SwmCommon):
         self.assertEqual(payment.plan_name, "Monthly Household")
         self.assertEqual(payment.amount, 100.0)
         self.assertFalse(payment.plan_id)
+
+    def test_normal_renewal_never_flagged_underpaid(self):
+        self.member.subscription_plan_id = self.plan
+        self.member.action_renew_subscription()
+        payment = self.env["otm.swm.subscription.payment"].search(
+            [("member_id", "=", self.member.id)], limit=1)
+        self.assertFalse(payment.is_underpaid)
+
+    def test_manual_partial_payment_flagged_underpaid(self):
+        payment = self.env["otm.swm.subscription.payment"].create({
+            "member_id": self.member.id,
+            "plan_id": self.plan.id,
+            "plan_name": self.plan.name,
+            "amount": 60.0,  # less than the plan's 100.0 price
+        })
+        self.assertTrue(payment.is_underpaid)
+        self.assertEqual(payment.plan_price_at_payment, 100.0)
+
+    def test_full_manual_payment_not_flagged(self):
+        payment = self.env["otm.swm.subscription.payment"].create({
+            "member_id": self.member.id,
+            "plan_id": self.plan.id,
+            "plan_name": self.plan.name,
+            "amount": 100.0,
+        })
+        self.assertFalse(payment.is_underpaid)
+
+    def test_underpaid_snapshot_survives_later_price_change(self):
+        payment = self.env["otm.swm.subscription.payment"].create({
+            "member_id": self.member.id,
+            "plan_id": self.plan.id,
+            "plan_name": self.plan.name,
+            "amount": 90.0,  # less than the 100.0 plan price
+        })
+        self.assertTrue(payment.is_underpaid)
+        self.plan.price = 200.0  # raise price after the fact
+        self.assertEqual(
+            payment.plan_price_at_payment, 100.0,
+            "Reference price must stay the snapshot, not track the "
+            "plan's current price")

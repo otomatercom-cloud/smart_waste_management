@@ -127,6 +127,10 @@
                                  help="A monthly cron reminds any connected member whose subscription expires within this many days, or has already lapsed, to renew.">
                             <field name="swm_subscription_reminder_days_before"/>
                         </setting>
+                        <setting string="Underpayment Alerts"
+                                 help="Notify a member via Telegram the moment a recorded payment is less than their plan's price - e.g. a partial amount entered by hand.">
+                            <field name="swm_underpayment_alerts_enabled"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>
