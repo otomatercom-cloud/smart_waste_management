@@ -19,464 +19,559 @@
         </div>
     </template>
 
+    <!-- ==========================================================
+         All four pages below are standalone <html> documents, NOT
+         chained through t-call="portal.portal_layout". That call
+         drags in website.layout's SEO/editability machinery, which
+         expects a growing list of context variables (website,
+         main_object, seo_object, and apparently more) that a plain
+         portal controller is never given automatically - only the
+         website module's own page-dispatch pipeline supplies them.
+         Chasing each missing variable one at a time proved endless;
+         going standalone (same pattern already proven reliable for
+         this module's public bin/staff QR pages) sidesteps the
+         entire problem permanently. Bootstrap + Font Awesome are
+         pulled from CDN since we no longer get them for free via
+         portal.frontend_layout's asset bundle.
+         ========================================================== -->
+
     <!-- ============ Member Dashboard ============ -->
     <template id="portal_member_dashboard" name="Smart Waste: Member Dashboard">
-        <t t-call="portal.portal_layout">
-            <t t-set="breadcrumbs_searchbar" t-value="True"/>
-            <div class="container swm-portal py-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="mb-0">
-                        <t t-if="member">
-                            <t t-out="member.association_id.name"/>
-                        </t>
-                        <t t-else="">Smart Bins</t>
-                    </h3>
-                    <div class="d-flex gap-2">
-                        <a href="/my/waste/subscription"
-                           class="btn btn-outline-secondary btn-sm">
-                            <i class="fa fa-credit-card me-1" role="img"
-                               aria-label="Subscription"/> Subscription
-                        </a>
-                        <a href="/my/waste/telegram"
-                           class="btn btn-outline-primary btn-sm">
-                            <i class="fa fa-telegram me-1" role="img"
-                               aria-label="Telegram"/> Notifications
-                        </a>
-                    </div>
-                </div>
-
-                <!-- KPI tiles -->
-                <div class="row g-2 mb-3 swm-kpi-row">
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-total">
-                            <div class="swm-kpi-num" t-out="kpi['total']"/>
-                            <div class="swm-kpi-label">Total</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-ok">
-                            <div class="swm-kpi-num" t-out="kpi['available']"/>
-                            <div class="swm-kpi-label">Available</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-warn">
-                            <div class="swm-kpi-num" t-out="kpi['nearly_full']"/>
-                            <div class="swm-kpi-label">Nearly Full</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-danger">
-                            <div class="swm-kpi-num" t-out="kpi['full']"/>
-                            <div class="swm-kpi-label">Full</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-info">
-                            <div class="swm-kpi-num" t-out="kpi['pending']"/>
-                            <div class="swm-kpi-label">Pending</div>
-                        </div>
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <div class="swm-kpi swm-kpi-muted">
-                            <div class="swm-kpi-num" t-out="kpi['offline']"/>
-                            <div class="swm-kpi-label">Offline</div>
-                        </div>
-                    </div>
-                </div>
-                <div t-if="kpi['delayed']" class="alert alert-danger py-2">
-                    <i class="fa fa-exclamation-triangle me-1" role="img"
-                       aria-label="Warning"/>
-                    <t t-out="kpi['delayed']"/> delayed collection(s) escalated.
-                </div>
-
-                <!-- Filters -->
-                <form method="get" action="/my/waste"
-                      class="row g-2 align-items-end mb-3">
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small mb-0" for="swm_street">
-                            Street</label>
-                        <select class="form-select form-select-sm"
-                                name="street_id" id="swm_street">
-                            <option value="">All streets</option>
-                            <t t-foreach="streets" t-as="s">
-                                <option t-att-value="s.id"
-                                        t-att-selected="'selected' if selected_street == s.id else None">
-                                    <t t-out="s.name"/>
-                                </option>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Smart Waste — My Bins</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+                <link rel="stylesheet"
+                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+                <style>
+                    body { background: #f4f6f8; }
+                    .swm-kpi { background:#fff; border-radius:10px; text-align:center; padding:10px 4px; box-shadow:0 1px 3px rgba(0,0,0,.08); border-top:4px solid #adb5bd; }
+                    .swm-kpi-num { font-size:1.4rem; font-weight:700; line-height:1.1; }
+                    .swm-kpi-label { font-size:.75rem; color:#6c757d; }
+                    .swm-kpi-total { border-top-color:#714b67; }
+                    .swm-kpi-ok { border-top-color:#28a745; }
+                    .swm-kpi-warn { border-top-color:#ffc107; }
+                    .swm-kpi-danger { border-top-color:#dc3545; }
+                    .swm-kpi-info { border-top-color:#17a2b8; }
+                    .swm-kpi-muted { border-top-color:#6c757d; }
+                    .swm-bin-card { border:0; border-left:5px solid #adb5bd; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:10px; }
+                    .swm-status-available, .swm-status-collected { border-left-color:#28a745; }
+                    .swm-status-nearly_full { border-left-color:#ffc107; }
+                    .swm-status-full, .swm-status-collection_pending { border-left-color:#dc3545; }
+                    .swm-status-collection_in_progress { border-left-color:#17a2b8; }
+                    .swm-status-offline, .swm-status-maintenance { border-left-color:#6c757d; }
+                    .swm-badge-available, .swm-badge-collected, .swm-badge-done { background:#28a745; color:#fff; }
+                    .swm-badge-nearly_full { background:#ffc107; color:#212529; }
+                    .swm-badge-full, .swm-badge-collection_pending { background:#dc3545; color:#fff; }
+                    .swm-badge-collection_in_progress, .swm-badge-in_progress { background:#17a2b8; color:#fff; }
+                    .swm-badge-offline, .swm-badge-maintenance, .swm-badge-cancelled { background:#6c757d; color:#fff; }
+                    .swm-progress { height:10px; border-radius:999px; }
+                    .swm-bar-available, .swm-bar-collected { background-color:#28a745; }
+                    .swm-bar-nearly_full { background-color:#ffc107; }
+                    .swm-bar-full, .swm-bar-collection_pending, .swm-bar-collection_in_progress { background-color:#dc3545; }
+                    .swm-bar-offline, .swm-bar-maintenance { background-color:#6c757d; }
+                </style>
+            </head>
+            <body>
+                <div class="container py-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mb-0">
+                            <t t-if="member">
+                                <t t-out="member.association_id.name"/>
                             </t>
-                        </select>
+                            <t t-else="">Smart Bins</t>
+                        </h3>
+                        <div class="d-flex gap-2">
+                            <a href="/my/waste/subscription"
+                               class="btn btn-outline-secondary btn-sm">
+                                <i class="fa fa-credit-card me-1"/> Subscription
+                            </a>
+                            <a href="/my/waste/telegram"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fa fa-telegram me-1"/> Notifications
+                            </a>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small mb-0" for="swm_status">
-                            Status</label>
-                        <select class="form-select form-select-sm"
-                                name="status" id="swm_status">
-                            <option value="">All statuses</option>
-                            <option value="available"
-                                    t-att-selected="'selected' if selected_status == 'available' else None">Available</option>
-                            <option value="nearly_full"
-                                    t-att-selected="'selected' if selected_status == 'nearly_full' else None">Nearly Full</option>
-                            <option value="full"
-                                    t-att-selected="'selected' if selected_status == 'full' else None">Full</option>
-                            <option value="collection_pending"
-                                    t-att-selected="'selected' if selected_status == 'collection_pending' else None">Collection Pending</option>
-                            <option value="offline"
-                                    t-att-selected="'selected' if selected_status == 'offline' else None">Offline</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-2">
-                        <button type="submit"
-                                class="btn btn-primary btn-sm w-100">
-                            Filter</button>
-                    </div>
-                </form>
 
-                <!-- Bin cards -->
-                <div class="row g-3">
-                    <t t-foreach="bins" t-as="b">
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div t-attf-class="card swm-bin-card swm-status-{{b.status}}">
-                                <div class="card-body py-2 px-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong t-out="b.code"/>
-                                        <span t-attf-class="badge swm-badge-{{b.status}}">
-                                            <t t-out="dict(b._fields['status'].selection).get(b.status)"/>
-                                        </span>
-                                    </div>
-                                    <div class="text-muted small">
-                                        <t t-out="b.name"/>
-                                        <t t-if="b.street_id"> ·
-                                            <t t-out="b.street_id.name"/></t>
-                                    </div>
-                                    <div class="progress swm-progress my-2">
-                                        <div t-attf-class="progress-bar swm-bar-{{b.status}}"
-                                             role="progressbar"
-                                             t-attf-style="width: {{min(100, max(0, round(b.fill_percentage)))}}%"
-                                             t-att-aria-valuenow="round(b.fill_percentage)"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100"/>
-                                    </div>
-                                    <div class="d-flex justify-content-between small text-muted">
-                                        <span><t t-out="round(b.fill_percentage)"/>% full</span>
-                                        <span t-if="b.last_reading_time">
-                                            <t t-out="b.last_reading_time"
-                                               t-options="{'widget': 'datetime'}"/>
-                                        </span>
+                    <!-- KPI tiles -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-total">
+                                <div class="swm-kpi-num" t-out="kpi['total']"/>
+                                <div class="swm-kpi-label">Total</div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-ok">
+                                <div class="swm-kpi-num" t-out="kpi['available']"/>
+                                <div class="swm-kpi-label">Available</div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-warn">
+                                <div class="swm-kpi-num" t-out="kpi['nearly_full']"/>
+                                <div class="swm-kpi-label">Nearly Full</div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-danger">
+                                <div class="swm-kpi-num" t-out="kpi['full']"/>
+                                <div class="swm-kpi-label">Full</div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-info">
+                                <div class="swm-kpi-num" t-out="kpi['pending']"/>
+                                <div class="swm-kpi-label">Pending</div>
+                            </div>
+                        </div>
+                        <div class="col-4 col-md-2">
+                            <div class="swm-kpi swm-kpi-muted">
+                                <div class="swm-kpi-num" t-out="kpi['offline']"/>
+                                <div class="swm-kpi-label">Offline</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="kpi['delayed']" class="alert alert-danger py-2">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        <t t-out="kpi['delayed']"/> delayed collection(s) escalated.
+                    </div>
+
+                    <!-- Filters -->
+                    <form method="get" action="/my/waste"
+                          class="row g-2 align-items-end mb-3">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small mb-0" for="swm_street">
+                                Street</label>
+                            <select class="form-select form-select-sm"
+                                    name="street_id" id="swm_street">
+                                <option value="">All streets</option>
+                                <t t-foreach="streets" t-as="s">
+                                    <option t-att-value="s.id"
+                                            t-att-selected="'selected' if selected_street == s.id else None">
+                                        <t t-out="s.name"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small mb-0" for="swm_status">
+                                Status</label>
+                            <select class="form-select form-select-sm"
+                                    name="status" id="swm_status">
+                                <option value="">All statuses</option>
+                                <option value="available"
+                                        t-att-selected="'selected' if selected_status == 'available' else None">Available</option>
+                                <option value="nearly_full"
+                                        t-att-selected="'selected' if selected_status == 'nearly_full' else None">Nearly Full</option>
+                                <option value="full"
+                                        t-att-selected="'selected' if selected_status == 'full' else None">Full</option>
+                                <option value="collection_pending"
+                                        t-att-selected="'selected' if selected_status == 'collection_pending' else None">Collection Pending</option>
+                                <option value="offline"
+                                        t-att-selected="'selected' if selected_status == 'offline' else None">Offline</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm w-100">
+                                Filter</button>
+                        </div>
+                    </form>
+
+                    <!-- Bin cards -->
+                    <div class="row g-3">
+                        <t t-foreach="bins" t-as="b">
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div t-attf-class="card swm-bin-card swm-status-{{b.status}}">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong t-out="b.code"/>
+                                            <span t-attf-class="badge swm-badge-{{b.status}}">
+                                                <t t-out="dict(b._fields['status'].selection).get(b.status)"/>
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <t t-out="b.name"/>
+                                            <t t-if="b.street_id"> ·
+                                                <t t-out="b.street_id.name"/></t>
+                                        </div>
+                                        <div class="progress swm-progress my-2">
+                                            <div t-attf-class="progress-bar swm-bar-{{b.status}}"
+                                                 role="progressbar"
+                                                 t-attf-style="width: {{min(100, max(0, round(b.fill_percentage)))}}%"
+                                                 t-att-aria-valuenow="round(b.fill_percentage)"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted">
+                                            <span><t t-out="round(b.fill_percentage)"/>% full</span>
+                                            <span t-if="b.last_reading_time">
+                                                <t t-out="b.last_reading_time"
+                                                   t-options="{'widget': 'datetime'}"/>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </t>
-                    <div t-if="not bins" class="col-12">
-                        <div class="alert alert-info">
-                            No bins match the selected filters.
+                        </t>
+                        <div t-if="not bins" class="col-12">
+                            <div class="alert alert-info">
+                                No bins match the selected filters.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </t>
+            </body>
+        </html>
     </template>
 
     <!-- ============ Telegram Connect ============ -->
     <template id="portal_telegram_connect"
               name="Smart Waste: Telegram Connect">
-        <t t-call="portal.portal_layout">
-            <div class="container swm-portal py-3" style="max-width: 640px;">
-                <a href="/my/waste" class="btn btn-link ps-0 mb-2">
-                    <i class="fa fa-arrow-left me-1" role="img"
-                       aria-label="Back"/> Back to dashboard
-                </a>
-                <h3>Telegram Notifications</h3>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Smart Waste — Notifications</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+                <link rel="stylesheet"
+                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+                <style>
+                    body { background: #f4f6f8; }
+                    .swm-qr { background:#fff; max-width:240px; width:100%; }
+                </style>
+            </head>
+            <body>
+                <div class="container py-3" style="max-width: 640px;">
+                    <a href="/my/waste" class="btn btn-link ps-0 mb-2">
+                        <i class="fa fa-arrow-left me-1"/> Back to dashboard
+                    </a>
+                    <h3>Telegram Notifications</h3>
 
-                <t t-if="member.telegram_connected">
-                    <div class="alert alert-success">
-                        <i class="fa fa-check-circle me-1" role="img"
-                           aria-label="Connected"/>
-                        Connected as
-                        <strong t-out="member.telegram_username or 'Telegram user'"/>
-                        <t t-if="member.telegram_connected_on">
-                            since <t t-out="member.telegram_connected_on"
-                                     t-options="{'widget': 'datetime'}"/>
-                        </t>
-                    </div>
-                    <form method="post"
-                          action="/my/waste/telegram/disconnect">
+                    <t t-if="member.telegram_connected">
+                        <div class="alert alert-success">
+                            <i class="fa fa-check-circle me-1"/>
+                            Connected as
+                            <strong t-out="member.telegram_username or 'Telegram user'"/>
+                            <t t-if="member.telegram_connected_on">
+                                since <t t-out="member.telegram_connected_on"
+                                         t-options="{'widget': 'datetime'}"/>
+                            </t>
+                        </div>
+                        <form method="post"
+                              action="/my/waste/telegram/disconnect">
+                            <input type="hidden" name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm">
+                                Disconnect Telegram
+                            </button>
+                        </form>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted">
+                            Scan the QR code with your phone or tap the button to
+                            open Telegram and link your account. The link is
+                            single-use and expires automatically.
+                        </p>
+                        <div t-if="deep_link" class="text-center my-3">
+                            <img t-attf-src="/report/barcode/?barcode_type=QR&amp;value={{deep_link}}&amp;width=220&amp;height=220"
+                                 alt="Telegram registration QR code"
+                                 class="swm-qr border rounded p-2"/>
+                            <div class="mt-3">
+                                <a t-att-href="deep_link"
+                                   class="btn btn-primary" target="_blank"
+                                   rel="noopener">
+                                    <i class="fa fa-telegram me-1"/> Open in Telegram
+                                </a>
+                            </div>
+                        </div>
+                        <div t-else="" class="alert alert-warning">
+                            Telegram bot is not configured yet. Please contact
+                            your administrator.
+                        </div>
+                    </t>
+
+                    <hr/>
+                    <h5>Notification Preferences</h5>
+                    <form method="post" action="/my/waste/preferences">
                         <input type="hidden" name="csrf_token"
                                t-att-value="request.csrf_token()"/>
-                        <button type="submit"
-                                class="btn btn-outline-danger btn-sm">
-                            Disconnect Telegram
-                        </button>
-                    </form>
-                </t>
-                <t t-else="">
-                    <p class="text-muted">
-                        Scan the QR code with your phone or tap the button to
-                        open Telegram and link your account. The link is
-                        single-use and expires automatically.
-                    </p>
-                    <div t-if="deep_link" class="text-center my-3">
-                        <img t-attf-src="/report/barcode/?barcode_type=QR&amp;value={{deep_link}}&amp;width=220&amp;height=220"
-                             alt="Telegram registration QR code"
-                             class="swm-qr border rounded p-2"/>
-                        <div class="mt-3">
-                            <a t-att-href="deep_link"
-                               class="btn btn-primary" target="_blank"
-                               rel="noopener">
-                                <i class="fa fa-telegram me-1" role="img"
-                                   aria-label="Telegram"/> Open in Telegram
-                            </a>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_bin_full" id="pref_full"
+                                   t-att-checked="'checked' if member.notify_bin_full else None"/>
+                            <label class="form-check-label" for="pref_full">
+                                Bin full on my street</label>
                         </div>
-                    </div>
-                    <div t-else="" class="alert alert-warning">
-                        Telegram bot is not configured yet. Please contact
-                        your administrator.
-                    </div>
-                </t>
-
-                <hr/>
-                <h5>Notification Preferences</h5>
-                <form method="post" action="/my/waste/preferences">
-                    <input type="hidden" name="csrf_token"
-                           t-att-value="request.csrf_token()"/>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               name="notify_bin_full" id="pref_full"
-                               t-att-checked="'checked' if member.notify_bin_full else None"/>
-                        <label class="form-check-label" for="pref_full">
-                            Bin full on my street</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               name="notify_delayed" id="pref_delayed"
-                               t-att-checked="'checked' if member.notify_delayed else None"/>
-                        <label class="form-check-label" for="pref_delayed">
-                            Collection delayed</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               name="notify_collected" id="pref_collected"
-                               t-att-checked="'checked' if member.notify_collected else None"/>
-                        <label class="form-check-label" for="pref_collected">
-                            Bin collected</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               name="notify_available" id="pref_available"
-                               t-att-checked="'checked' if member.notify_available else None"/>
-                        <label class="form-check-label" for="pref_available">
-                            Bin available again</label>
-                    </div>
-                    <button type="submit"
-                            class="btn btn-primary btn-sm mt-2">
-                        Save Preferences</button>
-                </form>
-            </div>
-        </t>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_delayed" id="pref_delayed"
+                                   t-att-checked="'checked' if member.notify_delayed else None"/>
+                            <label class="form-check-label" for="pref_delayed">
+                                Collection delayed</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_collected" id="pref_collected"
+                                   t-att-checked="'checked' if member.notify_collected else None"/>
+                            <label class="form-check-label" for="pref_collected">
+                                Bin collected</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_available" id="pref_available"
+                                   t-att-checked="'checked' if member.notify_available else None"/>
+                            <label class="form-check-label" for="pref_available">
+                                Bin available again</label>
+                        </div>
+                        <button type="submit"
+                                class="btn btn-primary btn-sm mt-2">
+                            Save Preferences</button>
+                    </form>
+                </div>
+            </body>
+        </html>
     </template>
 
     <!-- ============ Staff Dashboard ============ -->
     <template id="portal_staff_dashboard" name="Smart Waste: Staff Dashboard">
-        <t t-call="portal.portal_layout">
-            <div class="container swm-portal py-3">
-                <h3 class="mb-1">My Collection Tasks</h3>
-                <p class="text-muted">
-                    <t t-out="staff.name"/> ·
-                    <t t-out="len(requests)"/> open request(s)
-                </p>
-                <div class="row g-3">
-                    <t t-foreach="requests" t-as="r">
-                        <div class="col-12 col-md-6">
-                            <div t-attf-class="card swm-req-card {{'swm-req-escalated' if r.escalation_level else ''}}">
-                                <div class="card-body py-2 px-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong t-out="r.name"/>
-                                        <span t-attf-class="badge swm-badge-{{r.state}}">
-                                            <t t-out="dict(r._fields['state'].selection).get(r.state)"/>
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <t t-out="r.bin_id.display_label"/>
-                                    </div>
-                                    <div class="text-muted small">
-                                        <t t-if="r.street_id">
-                                            <t t-out="r.street_id.name"/> ·
-                                        </t>
-                                        <t t-out="r.association_id.name"/>
-                                    </div>
-                                    <div class="text-muted small">
-                                        Full since:
-                                        <t t-out="r.full_detected_time"
-                                           t-options="{'widget': 'datetime'}"/>
-                                        <span t-if="r.escalation_level"
-                                              class="text-danger fw-bold ms-2">
-                                            Escalation L<t t-out="r.escalation_level"/>
-                                        </span>
-                                    </div>
-                                    <div class="mt-2 d-flex gap-2">
-                                        <form t-if="r.state in ('new', 'assigned')"
-                                              method="post"
-                                              t-attf-action="/my/waste/staff/request/{{r.id}}/accept">
-                                            <input type="hidden"
-                                                   name="csrf_token"
-                                                   t-att-value="request.csrf_token()"/>
-                                            <button type="submit"
-                                                    class="btn btn-primary btn-sm">
-                                                Accept</button>
-                                        </form>
-                                        <form t-if="r.state == 'accepted'"
-                                              method="post"
-                                              t-attf-action="/my/waste/staff/request/{{r.id}}/start">
-                                            <input type="hidden"
-                                                   name="csrf_token"
-                                                   t-att-value="request.csrf_token()"/>
-                                            <button type="submit"
-                                                    class="btn btn-success btn-sm">
-                                                Start Collection</button>
-                                        </form>
-                                        <span t-if="r.state == 'in_progress'"
-                                              class="text-muted small align-self-center">
-                                            Empty the bin — the sensor will
-                                            confirm completion automatically.
-                                        </span>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Smart Waste — My Collection Tasks</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+                <link rel="stylesheet"
+                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+                <style>
+                    body { background: #f4f6f8; }
+                    .swm-req-card { border:0; border-left:5px solid #0d6efd; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:10px; }
+                    .swm-req-escalated { border-left-color:#dc3545; background:#fff5f5; }
+                    .swm-badge-new, .swm-badge-assigned { background:#0d6efd; color:#fff; }
+                    .swm-badge-accepted { background:#6610f2; color:#fff; }
+                    .swm-badge-in_progress { background:#17a2b8; color:#fff; }
+                    .swm-badge-done { background:#28a745; color:#fff; }
+                    .swm-badge-cancelled { background:#6c757d; color:#fff; }
+                </style>
+            </head>
+            <body>
+                <div class="container py-3">
+                    <h3 class="mb-1">My Collection Tasks</h3>
+                    <p class="text-muted">
+                        <t t-out="staff.name"/> ·
+                        <t t-out="len(requests)"/> open request(s)
+                    </p>
+                    <div class="row g-3">
+                        <t t-foreach="requests" t-as="r">
+                            <div class="col-12 col-md-6">
+                                <div t-attf-class="card swm-req-card {{'swm-req-escalated' if r.escalation_level else ''}}">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong t-out="r.name"/>
+                                            <span t-attf-class="badge swm-badge-{{r.state}}">
+                                                <t t-out="dict(r._fields['state'].selection).get(r.state)"/>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <t t-out="r.bin_id.display_label"/>
+                                        </div>
+                                        <div class="text-muted small">
+                                            <t t-if="r.street_id">
+                                                <t t-out="r.street_id.name"/> ·
+                                            </t>
+                                            <t t-out="r.association_id.name"/>
+                                        </div>
+                                        <div class="text-muted small">
+                                            Full since:
+                                            <t t-out="r.full_detected_time"
+                                               t-options="{'widget': 'datetime'}"/>
+                                            <span t-if="r.escalation_level"
+                                                  class="text-danger fw-bold ms-2">
+                                                Escalation L<t t-out="r.escalation_level"/>
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 d-flex gap-2">
+                                            <form t-if="r.state in ('new', 'assigned')"
+                                                  method="post"
+                                                  t-attf-action="/my/waste/staff/request/{{r.id}}/accept">
+                                                <input type="hidden"
+                                                       name="csrf_token"
+                                                       t-att-value="request.csrf_token()"/>
+                                                <button type="submit"
+                                                        class="btn btn-primary btn-sm">
+                                                    Accept</button>
+                                            </form>
+                                            <form t-if="r.state == 'accepted'"
+                                                  method="post"
+                                                  t-attf-action="/my/waste/staff/request/{{r.id}}/start">
+                                                <input type="hidden"
+                                                       name="csrf_token"
+                                                       t-att-value="request.csrf_token()"/>
+                                                <button type="submit"
+                                                        class="btn btn-success btn-sm">
+                                                    Start Collection</button>
+                                            </form>
+                                            <span t-if="r.state == 'in_progress'"
+                                                  class="text-muted small align-self-center">
+                                                Empty the bin — the sensor will
+                                                confirm completion automatically.
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </t>
-                    <div t-if="not requests" class="col-12">
-                        <div class="alert alert-success">
-                            <i class="fa fa-check me-1" role="img"
-                               aria-label="Done"/>
-                            No open collection requests. All caught up!
+                        </t>
+                        <div t-if="not requests" class="col-12">
+                            <div class="alert alert-success">
+                                <i class="fa fa-check me-1"/>
+                                No open collection requests. All caught up!
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </t>
+            </body>
+        </html>
     </template>
 
     <!-- ============ Subscription: pick plan, self-declare payment ==== -->
     <template id="portal_subscription_page"
               name="Smart Waste: Subscription">
-        <t t-call="portal.portal_layout">
-            <div class="container swm-portal py-3" style="max-width: 640px;">
-                <a href="/my/waste" class="btn btn-link ps-0 mb-2">
-                    <i class="fa fa-arrow-left me-1" role="img"
-                       aria-label="Back"/> Back to dashboard
-                </a>
-                <h3>Subscription</h3>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Smart Waste — Subscription</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+                <link rel="stylesheet"
+                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+                <style>
+                    body { background: #f4f6f8; }
+                </style>
+            </head>
+            <body>
+                <div class="container py-3" style="max-width: 640px;">
+                    <a href="/my/waste" class="btn btn-link ps-0 mb-2">
+                        <i class="fa fa-arrow-left me-1"/> Back to dashboard
+                    </a>
+                    <h3>Subscription</h3>
 
-                <div t-if="submitted"
-                     class="alert alert-success">
-                    <i class="fa fa-check-circle me-1" role="img"
-                       aria-label="Submitted"/>
-                    Your payment claim has been submitted. Your
-                    association will review it before it becomes active.
-                </div>
+                    <div t-if="submitted"
+                         class="alert alert-success">
+                        <i class="fa fa-check-circle me-1"/>
+                        Your payment claim has been submitted. Your
+                        association will review it before it becomes active.
+                    </div>
 
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <span>Current plan</span>
-                            <strong t-out="member.subscription_plan_id.name or 'None'"/>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Wallet balance</span>
-                            <strong t-field="member.wallet_balance"
-                                    t-options="{'widget': 'monetary',
-                                                'display_currency': member.wallet_currency_id}"/>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Status</span>
-                            <span t-attf-class="badge {{ 'bg-success' if member.subscription_valid else 'bg-danger' }}">
-                                <t t-if="member.subscription_valid">Active</t>
-                                <t t-else="">Inactive / Expired</t>
-                            </span>
-                        </div>
-                        <div t-if="member.subscription_expiry"
-                             class="d-flex justify-content-between">
-                            <span>Valid until</span>
-                            <strong t-out="member.subscription_expiry"/>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <span>Current plan</span>
+                                <strong t-out="member.subscription_plan_id.name or 'None'"/>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Wallet balance</span>
+                                <strong t-field="member.wallet_balance"
+                                        t-options="{'widget': 'monetary',
+                                                    'display_currency': member.wallet_currency_id}"/>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Status</span>
+                                <span t-attf-class="badge {{ 'bg-success' if member.subscription_valid else 'bg-danger' }}">
+                                    <t t-if="member.subscription_valid">Active</t>
+                                    <t t-else="">Inactive / Expired</t>
+                                </span>
+                            </div>
+                            <div t-if="member.subscription_expiry"
+                                 class="d-flex justify-content-between">
+                                <span>Valid until</span>
+                                <strong t-out="member.subscription_expiry"/>
+                            </div>
                         </div>
                     </div>
+
+                    <h5>Choose a Plan</h5>
+                    <form method="post" action="/my/waste/subscription/select-plan"
+                          class="mb-4">
+                        <input type="hidden" name="csrf_token"
+                               t-att-value="request.csrf_token()"/>
+                        <select class="form-select mb-2" name="plan_id" required="required">
+                            <option value="">Select a plan…</option>
+                            <t t-foreach="plans" t-as="p">
+                                <option t-att-value="p.id"
+                                        t-att-selected="'selected' if member.subscription_plan_id.id == p.id else None">
+                                    <t t-out="p.name"/> —
+                                    <t t-out="p.price"/> / <t t-out="p.duration_days"/> days
+                                    <t t-if="p.rate_per_kg">
+                                        (<t t-out="p.rate_per_kg"/>/kg)
+                                    </t>
+                                </option>
+                            </t>
+                        </select>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            Save Plan Choice
+                        </button>
+                    </form>
+
+                    <h5>I've Paid</h5>
+                    <p class="text-muted small">
+                        Once you've paid your association (cash, UPI, bank
+                        transfer, etc.) for your selected plan, tap below to
+                        let them know. Your wallet and subscription only
+                        activate once they approve it.
+                    </p>
+                    <form method="post" action="/my/waste/subscription/mark-paid">
+                        <input type="hidden" name="csrf_token"
+                               t-att-value="request.csrf_token()"/>
+                        <button type="submit" class="btn btn-primary"
+                                t-att-disabled="None if member.subscription_plan_id else 'disabled'">
+                            I've Paid — <t t-out="member.subscription_plan_id.price or ''"/>
+                            for <t t-out="member.subscription_plan_id.name or 'no plan selected'"/>
+                        </button>
+                    </form>
+
+                    <hr/>
+                    <h5>Recent Payments</h5>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Plan</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="payments" t-as="pay">
+                                <td t-out="pay.payment_date"/>
+                                <td t-out="pay.plan_name"/>
+                                <td t-out="pay.amount"/>
+                                <td>
+                                    <span t-attf-class="badge {{
+                                        {'pending': 'bg-warning text-dark',
+                                         'approved': 'bg-success',
+                                         'rejected': 'bg-danger'}.get(pay.state, 'bg-secondary') }}">
+                                        <t t-out="dict(pay._fields['state'].selection).get(pay.state)"/>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr t-if="not payments">
+                                <td colspan="4" class="text-muted">
+                                    No payments recorded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-
-                <h5>Choose a Plan</h5>
-                <form method="post" action="/my/waste/subscription/select-plan"
-                      class="mb-4">
-                    <input type="hidden" name="csrf_token"
-                           t-att-value="request.csrf_token()"/>
-                    <select class="form-select mb-2" name="plan_id" required="required">
-                        <option value="">Select a plan…</option>
-                        <t t-foreach="plans" t-as="p">
-                            <option t-att-value="p.id"
-                                    t-att-selected="'selected' if member.subscription_plan_id.id == p.id else None">
-                                <t t-out="p.name"/> —
-                                <t t-out="p.price"/> / <t t-out="p.duration_days"/> days
-                                <t t-if="p.rate_per_kg">
-                                    (<t t-out="p.rate_per_kg"/>/kg)
-                                </t>
-                            </option>
-                        </t>
-                    </select>
-                    <button type="submit" class="btn btn-outline-primary btn-sm">
-                        Save Plan Choice
-                    </button>
-                </form>
-
-                <h5>I've Paid</h5>
-                <p class="text-muted small">
-                    Once you've paid your association (cash, UPI, bank
-                    transfer, etc.) for your selected plan, tap below to
-                    let them know. Your wallet and subscription only
-                    activate once they approve it.
-                </p>
-                <form method="post" action="/my/waste/subscription/mark-paid">
-                    <input type="hidden" name="csrf_token"
-                           t-att-value="request.csrf_token()"/>
-                    <button type="submit" class="btn btn-primary"
-                            t-att-disabled="None if member.subscription_plan_id else 'disabled'">
-                        I've Paid — <t t-out="member.subscription_plan_id.price or ''"/>
-                        for <t t-out="member.subscription_plan_id.name or 'no plan selected'"/>
-                    </button>
-                </form>
-
-                <hr/>
-                <h5>Recent Payments</h5>
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Plan</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr t-foreach="payments" t-as="pay">
-                            <td t-out="pay.payment_date"/>
-                            <td t-out="pay.plan_name"/>
-                            <td t-out="pay.amount"/>
-                            <td>
-                                <span t-attf-class="badge {{
-                                    {'pending': 'bg-warning text-dark',
-                                     'approved': 'bg-success',
-                                     'rejected': 'bg-danger'}.get(pay.state, 'bg-secondary') }}">
-                                    <t t-out="dict(pay._fields['state'].selection).get(pay.state)"/>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr t-if="not payments">
-                            <td colspan="4" class="text-muted">
-                                No payments recorded yet.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </t>
+            </body>
+        </html>
     </template>
 
 </odoo>
