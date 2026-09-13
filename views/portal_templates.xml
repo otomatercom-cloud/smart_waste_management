@@ -497,6 +497,31 @@
                         </div>
                     </div>
 
+                    <div class="card mb-3 border-primary">
+                        <div class="card-body">
+                            <h6 class="card-title mb-2">
+                                <i class="fa fa-calendar-day me-1"/> Today
+                            </h6>
+                            <div class="d-flex justify-content-between">
+                                <span>Waste deposited</span>
+                                <strong>
+                                    <t t-out="round(today_summary['weight_kg'], 2)"/> kg
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Amount spent</span>
+                                <strong>
+                                    <t t-out="member.wallet_currency_id.symbol"/><t
+                                       t-out="'%.2f' % today_summary['amount']"/>
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>Bin visits</span>
+                                <span t-out="today_summary['visits']"/>
+                            </div>
+                        </div>
+                    </div>
+
                     <h5>Choose a Plan</h5>
                     <form method="post" action="/my/waste/subscription/select-plan"
                           class="mb-4">
@@ -565,6 +590,37 @@
                             <tr t-if="not payments">
                                 <td colspan="4" class="text-muted">
                                     No payments recorded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <hr/>
+                    <h5>Recent Bin Activity</h5>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Bin</th>
+                                <th class="text-end">Deposited</th>
+                                <th class="text-end">Charged</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="recent_activity" t-as="act">
+                                <td t-field="act.create_date"/>
+                                <td t-out="act.bin_code"/>
+                                <td class="text-end">
+                                    <t t-out="round(act.weight_deposited_kg, 2)"/> kg
+                                </td>
+                                <td class="text-end">
+                                    <t t-out="member.wallet_currency_id.symbol"/><t
+                                       t-out="'%.2f' % act.amount_charged"/>
+                                </td>
+                            </tr>
+                            <tr t-if="not recent_activity">
+                                <td colspan="4" class="text-muted">
+                                    No bin activity yet.
                                 </td>
                             </tr>
                         </tbody>

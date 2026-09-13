@@ -1,5 +1,5 @@
 # Part of Otomater. See LICENSE file for full copyright and licensing details.
-from odoo import http
+from odoo import fields, http
 from odoo.http import request
 
 OPEN_STATES = ("new", "assigned", "accepted", "in_progress")
@@ -160,11 +160,34 @@ class SwmPortal(http.Controller):
         payments = env["otm.swm.subscription.payment"].sudo().search(
             [("member_id", "=", member.id)], order="payment_date desc",
             limit=10)
+
+        # "How much did I put in and pay today" - and the last few days
+        # for a quick trend, so the member doesn't have to guess.
+        Log = env["otm.swm.bin.access.log"].sudo()
+        today_start = fields.Datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        today_rows = Log.search([
+            ("member_id", "=", member.id),
+            ("granted", "=", True),
+            ("create_date", ">=", today_start),
+        ])
+        today_summary = {
+            "weight_kg": sum(today_rows.mapped("weight_deposited_kg")),
+            "amount": sum(today_rows.mapped("amount_charged")),
+            "visits": len(today_rows),
+        }
+        recent_activity = Log.search([
+            ("member_id", "=", member.id),
+            ("granted", "=", True),
+        ], order="create_date desc", limit=10)
+
         return request.render(
             "smart_waste_management.portal_subscription_page", {
                 "member": member,
                 "plans": plans,
                 "payments": payments,
+                "today_summary": today_summary,
+                "recent_activity": recent_activity,
                 "submitted": kw.get("submitted"),
                 "page_name": "swm_subscription",
                 "website": _safe_website_val(),
