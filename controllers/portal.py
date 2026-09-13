@@ -133,6 +133,7 @@ class SwmPortal(http.Controller):
                 "member": member,
                 "plans": plans,
                 "payments": payments,
+                "submitted": kw.get("submitted"),
                 "page_name": "swm_subscription",
             })
 
