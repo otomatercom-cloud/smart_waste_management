@@ -15,11 +15,22 @@ def _safe_website_val():
     (non-public) user hits any of our pages - regardless of whether
     website happens to be installed at all on a given deployment. This
     always supplies a safe value so that never happens, on installs
-    with or without the website module."""
+    with or without the website module.
+
+    The fallback must be an empty website.website RECORDSET, not a
+    bare Python False: the template later does website.id, which an
+    empty recordset answers safely (False) without raising, while a
+    plain bool has no .id attribute at all and blows up the same way,
+    just one line further into the same template."""
     try:
-        return request.website
+        val = request.website
+        if val:
+            return val
     except Exception:
-        return False
+        pass
+    if "website" in request.env.registry.models:
+        return request.env["website"].sudo()
+    return False
 
 
 class SwmPortal(http.Controller):
