@@ -608,7 +608,7 @@
                         </thead>
                         <tbody>
                             <tr t-foreach="recent_activity" t-as="act">
-                                <td t-field="act.create_date"/>
+                                <td><span t-field="act.create_date"/></td>
                                 <td t-out="act.bin_code"/>
                                 <td class="text-end">
                                     <t t-out="round(act.weight_deposited_kg, 2)"/> kg
