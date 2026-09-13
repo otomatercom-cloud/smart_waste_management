@@ -172,6 +172,15 @@ class SwmAssociationMember(models.Model):
         string="Payment History")
     subscription_payment_count = fields.Integer(
         compute="_compute_subscription_payment_count")
+    wallet_balance = fields.Monetary(
+        currency_field="wallet_currency_id", default=0.0, readonly=True,
+        help="What this member has left to spend on per-kg waste "
+             "charges. Topped up by the plan's price on every Renew "
+             "Subscription. Only relevant for a plan with Included Kg "
+             "set (i.e. one with a per-kg rate) - flat plans never "
+             "touch this.")
+    wallet_currency_id = fields.Many2one(
+        "res.currency", default=lambda self: self.env.company.currency_id)
 
     @api.depends("subscription_active", "subscription_expiry")
     def _compute_subscription_valid(self):
@@ -210,6 +219,8 @@ class SwmAssociationMember(models.Model):
                 "subscription_active": True,
                 "subscription_expiry": new_expiry,
                 "subscription_last_reminder_date": False,
+                "wallet_balance": rec.wallet_balance + (
+                    plan.price if plan else 0.0),
             })
             Payment.create({
                 "member_id": rec.id,

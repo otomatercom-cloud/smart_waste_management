@@ -252,7 +252,7 @@
                                           style="font-size:0.65rem;">staff</span>
                                 </td>
                                 <td class="text-end"
-                                    t-esc="a.weight_kg ? a.weight_kg + ' kg' : '—'"/>
+                                    t-esc="a.weight_deposited_kg ? a.weight_deposited_kg + ' kg' : (a.session_closed ? '—' : 'in progress…')"/>
                             </tr>
                             <tr t-if="!state.recentAccess.length">
                                 <td colspan="5" class="text-muted">
@@ -290,7 +290,7 @@
                                 <td t-esc="h.street_id ? h.street_id[1] : '—'"/>
                                 <td t-esc="h.holder_name || '—'"/>
                                 <td class="text-end text-danger fw-bold"
-                                    t-esc="h.weight_kg + ' kg'"/>
+                                    t-esc="h.weight_deposited_kg + ' kg'"/>
                             </tr>
                             <tr t-if="!state.heavyDumps.length">
                                 <td colspan="5" class="text-muted">

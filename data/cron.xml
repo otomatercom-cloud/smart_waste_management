@@ -47,5 +47,14 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+        <record id="cron_swm_close_stale_rfid_sessions" model="ir.cron">
+            <field name="name">SWM: Close Stale RFID Weight Sessions</field>
+            <field name="model_id" ref="model_otm_swm_bin"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_close_stale_rfid_sessions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

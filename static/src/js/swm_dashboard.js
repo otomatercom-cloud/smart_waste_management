@@ -179,7 +179,7 @@ export class SwmDashboard extends Component {
             "otm.swm.bin.access.log",
             [["granted", "=", true]],
             ["bin_code", "street_id", "holder_name", "staff_id",
-                "weight_kg", "create_date"],
+                "weight_deposited_kg", "session_closed", "create_date"],
             { limit: 12, order: "create_date desc" },
         );
 
@@ -191,9 +191,9 @@ export class SwmDashboard extends Component {
         this.state.heavyDumps = await orm.searchRead(
             "otm.swm.bin.access.log",
             [["granted", "=", true],
-                ["weight_kg", ">=", heavyThreshold]],
+                ["weight_deposited_kg", ">=", heavyThreshold]],
             ["bin_code", "street_id", "holder_name", "staff_id",
-                "weight_kg", "create_date"],
+                "weight_deposited_kg", "create_date"],
             { limit: 12, order: "create_date desc" },
         );
 
@@ -202,10 +202,11 @@ export class SwmDashboard extends Component {
             [["granted", "=", true],
                 ["create_date", ">=", todayStartStr]],
             [],
-            ["weight_kg:sum"],
+            ["weight_deposited_kg:sum"],
         );
         kpi.weight_today = weightGroups.length
-            ? Math.round((weightGroups[0]["weight_kg:sum"] || 0) * 10) / 10
+            ? Math.round(
+                (weightGroups[0]["weight_deposited_kg:sum"] || 0) * 10) / 10
             : 0;
         kpi.opens_today = await orm.searchCount(
             "otm.swm.bin.access.log",
@@ -213,7 +214,7 @@ export class SwmDashboard extends Component {
         kpi.heavy_today = await orm.searchCount(
             "otm.swm.bin.access.log",
             [["granted", "=", true], ["create_date", ">=", todayStartStr],
-                ["weight_kg", ">=", heavyThreshold]]);
+                ["weight_deposited_kg", ">=", heavyThreshold]]);
 
         // ---- Subscription health
         kpi.subscriptions_lapsed = await orm.searchCount(

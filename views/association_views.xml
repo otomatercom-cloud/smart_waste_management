@@ -136,6 +136,9 @@
                 <field name="subscription_expiry" optional="show"/>
                 <field name="subscription_valid" widget="boolean_toggle"
                        optional="show"/>
+                <field name="wallet_balance" widget="monetary"
+                       optional="show"/>
+                <field name="wallet_currency_id" column_invisible="1"/>
             </list>
         </field>
     </record>
@@ -206,6 +209,9 @@
                             <field name="subscription_expiry"/>
                             <field name="subscription_valid"
                                    widget="boolean_toggle" readonly="1"/>
+                            <field name="wallet_balance" widget="monetary"/>
+                            <field name="wallet_currency_id"
+                                   groups="base.group_multi_currency"/>
                         </group>
                         <group>
                             <button name="action_renew_subscription"
@@ -214,8 +220,10 @@
                                     groups="smart_waste_management.group_swm_association_manager"/>
                             <div class="text-muted mt-2"
                                  invisible="not subscription_plan_id">
-                                Charges the selected plan's current price
-                                and extends by its duration.
+                                Charges the selected plan's current price,
+                                extends by its duration, and tops up the
+                                wallet balance by that price - which per-kg
+                                billing then draws down as waste is deposited.
                             </div>
                         </group>
                     </group>

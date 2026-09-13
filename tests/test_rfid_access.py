@@ -212,3 +212,97 @@ class TestRfidLockWhenFull(SwmCommon):
                 "member_id": self.member.id,
                 "staff_id": self.staff.id,  # both set - should raise
             })
+
+
+@tagged("post_install", "-at_install", "swm")
+class TestRfidWeightSession(SwmCommon):
+    """A visit can drop several bags before the lock re-closes - the
+    total the person actually put in is end-of-session weight minus
+    start-of-session weight, not any single instant reading."""
+
+    def setUp(self):
+        super().setUp()
+        self.member = self.env["otm.swm.association.member"].create({
+            "name": "Session Test Member",
+            "association_id": self.assoc.id,
+            "street_id": self.street.id,
+        })
+        self.card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "SESSION-CARD-1",
+            "holder_type": "member",
+            "member_id": self.member.id,
+        })
+        self.set_param("rfid_enabled", "True")
+        self.set_param("weight_capture_enabled", "True")
+        self.set_param("session_window_seconds", "30")
+
+    def test_single_bag_session(self):
+        # Bin starts empty (0 kg on the scale), one bag added at open.
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.0)
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.assertEqual(log.session_start_weight_kg, 2.0)
+        self.assertFalse(log.session_closed)
+        # Window hasn't elapsed yet - not finalised.
+        self.assertEqual(log.weight_deposited_kg, 0.0)
+
+    def test_two_bags_same_visit_sum_correctly(self):
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.0)
+        # A follow-up status ping mid-visit, after a second bag lands -
+        # the scale now reads the running total, 3.0 kg.
+        self.bin.process_reading(fill_percentage=10, weight_kg=3.0)
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.assertEqual(log.session_end_weight_kg, 3.0)
+        # Force the window closed to check the finalised total.
+        log.bin_id.write({"session_deadline": fields.Datetime.subtract(
+            fields.Datetime.now(), minutes=1)})
+        log.bin_id._close_stale_session()
+        self.assertTrue(log.session_closed)
+        self.assertEqual(log.weight_deposited_kg, 1.0)
+
+    def test_session_closes_lazily_on_next_tap(self):
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.0)
+        first_log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.bin.write({"session_deadline": fields.Datetime.subtract(
+            fields.Datetime.now(), minutes=1)})
+        # A second, unrelated tap should close the first session before
+        # processing itself - no need to wait for the cron.
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.5)
+        self.assertTrue(first_log.session_closed)
+
+    def test_denied_tap_never_opens_a_session(self):
+        self.bin.card = self.card  # noqa - readability marker only
+        self.member.write({"subscription_active": False})
+        self.set_param("subscription_enforcement_enabled", "True")
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.0)
+        self.assertFalse(self.bin.active_session_log_id)
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.assertTrue(log.session_closed)
+        self.assertFalse(log.granted)
+
+    def test_cron_closes_stale_sessions(self):
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=2.0)
+        self.bin.process_reading(fill_percentage=10, weight_kg=5.0)
+        self.bin.write({"session_deadline": fields.Datetime.subtract(
+            fields.Datetime.now(), minutes=1)})
+        self.env["otm.swm.bin"].cron_close_stale_rfid_sessions()
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.assertTrue(log.session_closed)
+        self.assertEqual(log.weight_deposited_kg, 3.0)
+        self.assertFalse(self.bin.active_session_log_id)
+
+    def test_weight_never_goes_negative(self):
+        # If the reading somehow dips below the start (sensor noise),
+        # deposited must clamp to 0, never a negative "removed" figure.
+        self.bin.check_rfid_access("SESSION-CARD-1", weight_kg=5.0)
+        self.bin.process_reading(fill_percentage=10, weight_kg=4.8)
+        self.bin.write({"session_deadline": fields.Datetime.subtract(
+            fields.Datetime.now(), minutes=1)})
+        self.bin._close_stale_session()
+        log = self.env["otm.swm.bin.access.log"].search(
+            [("card_uid", "=", "SESSION-CARD-1")], limit=1)
+        self.assertEqual(log.weight_deposited_kg, 0.0)

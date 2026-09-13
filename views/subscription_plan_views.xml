@@ -10,6 +10,7 @@
                 <field name="price" widget="monetary"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="duration_days"/>
+                <field name="rate_per_kg" widget="monetary" optional="show"/>
                 <field name="member_count"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
@@ -41,6 +42,7 @@
                         </group>
                         <group>
                             <field name="duration_days"/>
+                            <field name="rate_per_kg" widget="monetary"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                     </group>

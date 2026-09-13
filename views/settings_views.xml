@@ -135,6 +135,22 @@
                                  help="Notify a member via Telegram the moment a recorded payment is less than their plan's price - e.g. a partial amount entered by hand.">
                             <field name="swm_underpayment_alerts_enabled"/>
                         </setting>
+                        <setting string="RFID Open-Session Window (seconds)"
+                                 help="Weight readings sent within this many seconds after a granted tap are totalled onto that visit. Match to how long the lock stays open.">
+                            <field name="swm_session_window_seconds"/>
+                        </setting>
+                        <setting string="Per-Kg Wallet Billing"
+                                 help="Deduct weight_deposited x plan rate from a member's wallet balance when their visit closes. Only plans with Included Kg set actually bill.">
+                            <field name="swm_wallet_billing_enabled"/>
+                        </setting>
+                        <setting string="Low Balance Threshold"
+                                 help="A member's card is denied next tap once their wallet balance is at or below this. 0 blocks only once it runs out.">
+                            <field name="swm_wallet_low_balance_threshold"/>
+                        </setting>
+                        <setting string="Billing Receipt via Telegram"
+                                 help="Message a connected member with kg deposited, amount charged, and new balance the moment they're actually billed.">
+                            <field name="swm_billing_receipt_enabled"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

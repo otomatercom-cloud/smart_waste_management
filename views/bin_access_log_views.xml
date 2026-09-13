@@ -18,7 +18,13 @@
                 <field name="card_uid" optional="hide"/>
                 <field name="granted" widget="boolean_toggle"/>
                 <field name="deny_reason" optional="show"/>
-                <field name="weight_kg" optional="show"/>
+                <field name="weight_deposited_kg" string="Deposited"/>
+                <field name="amount_charged" widget="monetary"
+                       optional="show"/>
+                <field name="wallet_balance_after" widget="monetary"
+                       string="Balance After" optional="show"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="weight_kg" optional="hide" string="Instant Reading"/>
             </list>
         </field>
     </record>
@@ -45,7 +51,20 @@
                             <field name="granted"/>
                             <field name="deny_reason"
                                    invisible="granted"/>
-                            <field name="weight_kg"/>
+                            <field name="weight_deposited_kg"/>
+                            <field name="billing_rate_per_kg"
+                                   widget="monetary"/>
+                            <field name="amount_charged" widget="monetary"/>
+                            <field name="wallet_balance_after"
+                                   widget="monetary"/>
+                            <field name="currency_id"
+                                   groups="base.group_multi_currency"/>
+                            <field name="session_start_weight_kg"
+                                   groups="smart_waste_management.group_swm_supervisor"/>
+                            <field name="session_end_weight_kg"
+                                   groups="smart_waste_management.group_swm_supervisor"/>
+                            <field name="session_closed"/>
+                            <field name="weight_kg" string="Instant Reading"/>
                         </group>
                     </group>
                 </sheet>

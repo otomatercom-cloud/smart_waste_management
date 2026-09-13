@@ -1,5 +1,5 @@
 # Part of Otomater. See LICENSE file for full copyright and licensing details.
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class SwmSubscriptionPlan(models.Model):
@@ -23,9 +23,23 @@ class SwmSubscriptionPlan(models.Model):
         help="How many days one renewal on this plan covers. 30 for "
              "monthly, 90 for quarterly, 365 for annual, or any custom "
              "length.")
+    rate_per_kg = fields.Monetary(
+        currency_field="currency_id", default=0.0,
+        help="What one kg deposited costs, deducted directly from the "
+             "member's wallet balance at that visit's close. Set "
+             "whatever rate you charge - e.g. 30 for Rs 30/kg. Leave "
+             "at 0 for a flat plan with no per-kg billing at all "
+             "(wallet balance is never touched).")
     active = fields.Boolean(default=True)
     description = fields.Char()
     member_count = fields.Integer(compute="_compute_member_count")
+
+    def _compute_member_count(self):
+        Member = self.env["otm.swm.association.member"]
+        for rec in self:
+            rec.member_count = (
+                Member.search_count([("subscription_plan_id", "=", rec.id)])
+                if rec.id else 0)
 
     def _compute_member_count(self):
         Member = self.env["otm.swm.association.member"]

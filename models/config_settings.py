@@ -106,6 +106,40 @@ class ResConfigSettings(models.TransientModel):
              "hand under Subscription Payments. Renewals made through "
              "the Renew Subscription button always charge the full "
              "price and never trigger this.")
+    swm_session_window_seconds = fields.Integer(
+        string="RFID Open-Session Window (seconds)", default=30,
+        config_parameter=PARAM_PREFIX + "session_window_seconds",
+        help="After a granted RFID tap, any weight readings the device "
+             "sends within this window (while someone may still be "
+             "adding bags) are totalled onto that visit instead of "
+             "treated as separate events. Match this to how long your "
+             "lock actually stays open (UNLOCK_HOLD_MS in the firmware).")
+    swm_wallet_billing_enabled = fields.Boolean(
+        string="Per-Kg Wallet Billing", default=True,
+        config_parameter=PARAM_PREFIX + "wallet_billing_enabled",
+        help="When on, a member on a plan with Included Kg set (a "
+             "per-kg rate) has weight_deposited_kg x rate deducted "
+             "from their wallet balance every time their open-session "
+             "closes. When off, deposits are still weighed and logged "
+             "but nothing is ever charged. Flat plans (Included Kg = "
+             "0) never bill regardless of this setting.")
+    swm_wallet_low_balance_threshold = fields.Float(
+        string="Low Balance Threshold", default=0.0, digits=(10, 2),
+        config_parameter=PARAM_PREFIX + "wallet_low_balance_threshold",
+        help="A member's card is denied - \"balance low\" - the next "
+             "time they tap once their wallet balance is at or below "
+             "this. Only applies to members on a per-kg billed plan. "
+             "0 blocks only once the balance actually runs out; set "
+             "higher for an early-warning buffer.")
+    swm_billing_receipt_enabled = fields.Boolean(
+        string="Billing Receipt via Telegram", default=True,
+        config_parameter=PARAM_PREFIX + "billing_receipt_enabled",
+        help="When on, a connected member gets a Telegram message the "
+             "moment their visit's session closes and they were "
+             "actually billed: kg deposited, amount charged, and the "
+             "new wallet balance. Only fires when a real charge "
+             "happened (a metered plan, non-zero deposit) - never for "
+             "staff visits or flat/unmetered plans.")
 
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,
@@ -143,6 +177,14 @@ class ResConfigSettings(models.TransientModel):
         icp = self.env["ir.config_parameter"].sudo()
         try:
             return int(icp.get_param(PARAM_PREFIX + key, default))
+        except (TypeError, ValueError):
+            return default
+
+    @api.model
+    def swm_get_float(self, key, default):
+        icp = self.env["ir.config_parameter"].sudo()
+        try:
+            return float(icp.get_param(PARAM_PREFIX + key, default))
         except (TypeError, ValueError):
             return default
 

@@ -86,6 +86,7 @@ class SwmIotApi(http.Controller):
             device_status=str(payload.get("device_status") or "online"),
             battery_level=_num("battery_level"),
             signal_strength=_num("signal_strength"),
+            weight_kg=_num("weight_kg"),
             raw=json.dumps(payload)[:2000],
         )
         status = 200 if result.get("result") == "ok" else 400
@@ -128,4 +129,43 @@ class SwmIotApi(http.Controller):
                 weight_kg = None
 
         outcome = bin_rec.check_rfid_access(card_uid, weight_kg=weight_kg)
+        return _json_response({"result": "ok", **outcome}, 200)
+
+    @http.route("/api/smart_waste/bin/rfid-close", type="http",
+                auth="none", methods=["POST"], csrf=False,
+                save_session=False)
+    def bin_rfid_close(self, **kwargs):
+        """Called by the device the moment it physically re-locks (end
+        of its fixed hold-open timer, or an early physical close) with
+        the final weight reading. Finalises the open visit immediately
+        and returns the bill - weight deposited, amount charged, new
+        wallet balance - so the device can show it on-screen right
+        away, instead of relying on the session_deadline elapsing
+        lazily on some later, unrelated request.
+
+        Safe to call even when nothing was actually open (a staff
+        visit, or weight capture was off) - returns has_session: false
+        rather than an error.
+        """
+        try:
+            payload = json.loads(
+                request.httprequest.get_data(as_text=True) or "{}")
+        except (ValueError, TypeError):
+            return _json_response(
+                {"result": "error", "message": "Invalid JSON body"}, 400)
+
+        env = request.env(su=True)
+        bin_rec, err = _authenticate_bin(env, payload)
+        if err:
+            return err
+
+        weight_kg = None
+        raw_weight = payload.get("weight_kg")
+        if raw_weight is not None:
+            try:
+                weight_kg = float(raw_weight)
+            except (TypeError, ValueError):
+                weight_kg = None
+
+        outcome = bin_rec.close_rfid_session(weight_kg=weight_kg)
         return _json_response({"result": "ok", **outcome}, 200)

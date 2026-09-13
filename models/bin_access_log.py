@@ -6,6 +6,7 @@ DENY_REASONS = [
     ("card_inactive", "Card Deactivated"),
     ("subscription_expired", "Subscription Expired/Inactive"),
     ("bin_full_staff_only", "Bin Full - Staff/Supervisor Only"),
+    ("balance_low", "Wallet Balance Too Low"),
 ]
 
 
@@ -39,5 +40,42 @@ class SwmBinAccessLog(models.Model):
     deny_reason = fields.Selection(DENY_REASONS)
     weight_kg = fields.Float(
         string="Weight (kg)", digits=(6, 2),
-        help="Bin weight reported by the load cell at the time of this "
-             "tap, if the device sent one and weight capture is enabled.")
+        help="Bin weight reported at the moment of the tap itself - a "
+             "single instant reading, before anything more may have "
+             "been added. See Weight Deposited for the running total "
+             "over the whole open session.")
+    session_start_weight_kg = fields.Float(
+        digits=(6, 2), readonly=True,
+        help="Bin weight at the moment this visit's lock opened.")
+    session_end_weight_kg = fields.Float(
+        digits=(6, 2), readonly=True,
+        help="Latest bin weight reported before the open-session "
+             "window closed (someone may have added several bags "
+             "during this window - each reading updates this).")
+    session_closed = fields.Boolean(
+        default=False, readonly=True,
+        help="On once the open-session window has ended and "
+             "weight_deposited_kg has been finalised.")
+    weight_deposited_kg = fields.Float(
+        string="Weight Deposited (kg)", digits=(6, 2), readonly=True,
+        help="What this person actually put in during their visit: "
+             "session_end_weight_kg minus session_start_weight_kg, "
+             "finalised once the open-session window closes. This is "
+             "the number to use for \"how much did they dump\", not "
+             "the single-instant weight_kg above.")
+    currency_id = fields.Many2one(
+        "res.currency", default=lambda self: self.env.company.currency_id)
+    billing_rate_per_kg = fields.Monetary(
+        currency_field="currency_id", readonly=True,
+        help="The member's plan rate at the moment this visit opened - "
+             "snapshotted so a later price change never rewrites what "
+             "this visit actually cost. 0 for staff cards, flat plans, "
+             "or when wallet billing was off at the time.")
+    amount_charged = fields.Monetary(
+        currency_field="currency_id", readonly=True,
+        help="weight_deposited_kg x billing_rate_per_kg, deducted from "
+             "the member's wallet when the visit's session closed.")
+    wallet_balance_after = fields.Monetary(
+        currency_field="currency_id", readonly=True,
+        help="The member's wallet balance immediately after this "
+             "visit's charge was deducted.")

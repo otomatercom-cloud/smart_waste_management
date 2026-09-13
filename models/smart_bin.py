@@ -146,6 +146,12 @@ class SwmBin(models.Model):
              "member or staff - use this for a simple display; the two "
              "fields above are for filtering by holder type.")
     last_access_time = fields.Datetime(readonly=True)
+    active_session_log_id = fields.Many2one(
+        "otm.swm.bin.access.log", readonly=True, copy=False,
+        help="The still-open visit (granted tap, session window not "
+             "yet closed) whose weight_deposited_kg hasn't been "
+             "finalised. Empty when no one's currently mid-visit.")
+    session_deadline = fields.Datetime(readonly=True, copy=False)
     access_log_ids = fields.One2many(
         "otm.swm.bin.access.log", "bin_id", string="Access Log")
     access_log_count = fields.Integer(compute="_compute_access_log_count")
@@ -277,10 +283,24 @@ class SwmBin(models.Model):
     # ------------------------------------------------------------------
     def process_reading(self, distance_cm=None, fill_percentage=None,
                         device_status=None, battery_level=None,
-                        signal_strength=None, raw=None):
+                        signal_strength=None, weight_kg=None, raw=None):
         self.ensure_one()
         now = fields.Datetime.now()
         Settings = self.env["res.config.settings"]
+
+        # Close out any prior visit whose window has already elapsed,
+        # and feed a currently-open one if this reading arrives within
+        # its window - a status ping can carry weight just as well as
+        # an RFID tap can.
+        self._close_stale_session()
+        if weight_kg is not None and Settings.swm_get_bool(
+                "weight_capture_enabled", False):
+            self.write({
+                "current_weight_kg": weight_kg,
+                "last_weight_time": now,
+            })
+            if self.active_session_log_id:
+                self.active_session_log_id.session_end_weight_kg = weight_kg
 
         if fill_percentage is None and distance_cm is not None \
                 and self.bin_height_cm:
@@ -458,6 +478,116 @@ class SwmBin(models.Model):
             threshold = 10.0
         return {"heavy_weight_threshold_kg": threshold}
 
+    def _finalize_session(self, log):
+        """Compute the deposited weight for one visit, bill it against
+        the member's wallet if applicable, and clear it as the bin's
+        active session. Shared by the deadline-based lazy/cron close
+        and the device's explicit close_rfid_session() call."""
+        self.ensure_one()
+        deposited = max(
+            0.0, log.session_end_weight_kg - log.session_start_weight_kg)
+        charge = 0.0
+        balance_after = log.member_id.wallet_balance if log.member_id else 0.0
+        if log.member_id and log.billing_rate_per_kg:
+            charge = round(deposited * log.billing_rate_per_kg, 2)
+            log.member_id.wallet_balance -= charge
+            balance_after = log.member_id.wallet_balance
+        log.write({
+            "weight_deposited_kg": deposited,
+            "amount_charged": charge,
+            "wallet_balance_after": balance_after,
+            "session_closed": True,
+        })
+        self.write({
+            "active_session_log_id": False,
+            "session_deadline": False,
+        })
+        if charge:
+            self._send_billing_receipt(log)
+        return log
+
+    def _send_billing_receipt(self, log):
+        """Telegram a connected member the moment they're actually
+        billed: kg deposited, amount charged, new balance. Only called
+        when a real charge happened - never for staff visits (their
+        billing_rate_per_kg is always 0) or flat/unmetered plans."""
+        Settings = self.env["res.config.settings"]
+        if not Settings.swm_get_bool("billing_receipt_enabled", True):
+            return
+        member = log.member_id
+        if not member or not member.telegram_connected:
+            return
+        text = (
+            f"🗑️ Bin {log.bin_code}\n"
+            f"Deposited: {log.weight_deposited_kg:.2f} kg\n"
+            f"Charged: {log.currency_id.symbol}{log.amount_charged:.2f}\n"
+            f"Balance: {log.currency_id.symbol}{log.wallet_balance_after:.2f}")
+        self.env["software.telegram.message"].sudo().send_direct(
+            chat_id=member.telegram_chat_id, text=text,
+            event_type="swm_billing_receipt",
+            res_model="otm.swm.bin.access.log", res_id=log.id)
+
+    def _close_stale_session(self):
+        """If this bin has an open visit whose window has passed,
+        finalise it. Called opportunistically at the start of both
+        check_rfid_access and process_reading, plus a safety-net cron,
+        so a session closes within moments of its deadline even if the
+        device never explicitly closes it (see close_rfid_session for
+        the normal, immediate path a well-behaved device should use)."""
+        self.ensure_one()
+        if not self.active_session_log_id:
+            return
+        if self.session_deadline and fields.Datetime.now() < self.session_deadline:
+            return  # still within the window - nothing to close yet
+        self._finalize_session(self.active_session_log_id)
+
+    def close_rfid_session(self, weight_kg=None):
+        """Called by the device the moment it physically re-locks (e.g.
+        at the end of its fixed hold-open timer), instead of waiting
+        for the session_deadline to lazily elapse. Finalises NOW,
+        regardless of whether the window has technically passed yet,
+        and returns the bill so the device can show it immediately -
+        this is the path that makes an OLED "your bill / balance"
+        screen possible right when the lid closes.
+
+        Safe to call with no session open (e.g. a staff visit, or
+        weight capture was off) - returns has_session: False rather
+        than raising."""
+        self.ensure_one()
+        if weight_kg is not None:
+            Settings = self.env["res.config.settings"]
+            if Settings.swm_get_bool("weight_capture_enabled", False):
+                self.write({
+                    "current_weight_kg": weight_kg,
+                    "last_weight_time": fields.Datetime.now(),
+                })
+                if self.active_session_log_id:
+                    self.active_session_log_id.session_end_weight_kg = weight_kg
+        if not self.active_session_log_id:
+            return {"has_session": False}
+        log = self._finalize_session(self.active_session_log_id)
+        return {
+            "has_session": True,
+            "weight_deposited_kg": log.weight_deposited_kg,
+            "amount_charged": log.amount_charged,
+            "wallet_balance": log.wallet_balance_after,
+            "member_name": log.holder_name,
+        }
+
+    @api.model
+    def cron_close_stale_rfid_sessions(self):
+        """Safety net: closes any bin's open visit whose window has
+        already passed, even if the device never calls
+        close_rfid_session and no further tap or status ping arrives
+        to trigger the lazy-close either. Cheap - only touches bins
+        with a session actually open past its deadline."""
+        stale = self.search([
+            ("active_session_log_id", "!=", False),
+            ("session_deadline", "<", fields.Datetime.now()),
+        ])
+        for rec in stale:
+            rec._close_stale_session()
+
     def check_rfid_access(self, card_uid, weight_kg=None):
         """Called by the IoT controller the instant a card is tapped.
         Returns a dict the ESP32 uses to decide whether to actuate the
@@ -476,14 +606,23 @@ class SwmBin(models.Model):
         Settings = self.env["res.config.settings"]
         now = fields.Datetime.now()
 
+        # Close out any prior visit whose window has already elapsed
+        # before doing anything else with this tap.
+        self._close_stale_session()
+
+        weight_capture_on = Settings.swm_get_bool(
+            "weight_capture_enabled", False)
         # Weight capture is independent of the lock feature - a bin can
-        # have a load cell without RFID, or vice versa.
-        if weight_kg is not None and Settings.swm_get_bool(
-                "weight_capture_enabled", False):
+        # have a load cell without RFID, or vice versa. This also feeds
+        # an in-progress session if one is still open (e.g. the reading
+        # arrived via /bin/status instead of a fresh tap).
+        if weight_kg is not None and weight_capture_on:
             self.write({
                 "current_weight_kg": weight_kg,
                 "last_weight_time": now,
             })
+            if self.active_session_log_id:
+                self.active_session_log_id.session_end_weight_kg = weight_kg
 
         if not Settings.swm_get_bool("rfid_enabled", False):
             # Feature off: always open, no card/subscription checks, no
@@ -503,6 +642,7 @@ class SwmBin(models.Model):
         granted = False
         reason = "card_unknown"
         holder_name = ""
+        effective_rate = 0.0
         if not card:
             reason = "card_unknown"
         elif not card.active:
@@ -510,7 +650,8 @@ class SwmBin(models.Model):
         elif is_staff_card:
             # Staff/supervisor cards always open the bin - including
             # while full, which is precisely how they service it - and
-            # are never subject to subscription enforcement.
+            # are never subject to subscription enforcement or wallet
+            # billing at all.
             granted = True
             reason = "granted"
             holder_name = staff.name
@@ -521,11 +662,26 @@ class SwmBin(models.Model):
                 and not member.subscription_valid:
             reason = "subscription_expired"
         else:
-            granted = True
-            reason = "granted"
-            holder_name = member.name
+            plan = member.subscription_plan_id
+            effective_rate = plan.rate_per_kg if plan else 0.0
+            wallet_billed_plan = bool(plan and plan.rate_per_kg)
+            wallet_billing_on = Settings.swm_get_bool(
+                "wallet_billing_enabled", True)
+            low_threshold = Settings.swm_get_float(
+                "wallet_low_balance_threshold", 0.0)
+            if (wallet_billed_plan and wallet_billing_on
+                    and member.wallet_balance <= low_threshold):
+                reason = "balance_low"
+            else:
+                granted = True
+                reason = "granted"
+                holder_name = member.name
+                if not wallet_billing_on:
+                    effective_rate = 0.0  # billing off: never charge
 
-        self.env["otm.swm.bin.access.log"].sudo().create({
+        start_weight = weight_kg if weight_kg is not None \
+            else self.current_weight_kg
+        log = self.env["otm.swm.bin.access.log"].sudo().create({
             "bin_id": self.id,
             "card_uid": card_uid,
             "card_id": card.id if card else False,
@@ -535,21 +691,36 @@ class SwmBin(models.Model):
             "granted": granted,
             "deny_reason": False if granted else reason,
             "weight_kg": weight_kg if weight_kg is not None else 0.0,
+            "session_start_weight_kg": start_weight,
+            "session_end_weight_kg": start_weight,
+            "billing_rate_per_kg": effective_rate if granted else 0.0,
         })
 
         if granted:
+            window = Settings.swm_get_int("session_window_seconds", 30)
             self.write({
                 "last_access_member_id": member.id if not is_staff_card
                                          else False,
                 "last_access_staff_id": staff.id if is_staff_card else False,
                 "last_access_name": holder_name,
                 "last_access_time": now,
+                # Open a session ONLY when weight capture is actually
+                # on - no point tracking a window with nothing to sum.
+                "active_session_log_id": log.id if weight_capture_on else False,
+                "session_deadline": (
+                    fields.Datetime.add(now, seconds=window)
+                    if weight_capture_on else False),
             })
+        else:
+            log.session_closed = True  # denied taps never open a session
 
         return {
             "access": "granted" if granted else "denied",
             "reason": reason,
             "member_name": holder_name,
+            "wallet_balance": (
+                member.wallet_balance if member and not is_staff_card
+                else None),
         }
 
     def _resolve_staff(self):
