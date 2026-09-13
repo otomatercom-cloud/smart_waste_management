@@ -34,6 +34,7 @@ export class SwmDashboard extends Component {
                 weight_today: 0,
                 heavy_today: 0,
                 subscriptions_lapsed: 0,
+                payments_pending: 0,
             },
             byStatus: [],
             byCorporation: [],
@@ -221,6 +222,9 @@ export class SwmDashboard extends Component {
         kpi.subscriptions_lapsed = await orm.searchCount(
             "otm.swm.association.member",
             [["subscription_valid", "=", false]]);
+        kpi.payments_pending = await orm.searchCount(
+            "otm.swm.subscription.payment",
+            [["state", "=", "pending"]]);
 
         this.state.loading = false;
     }
@@ -373,6 +377,17 @@ export class SwmDashboard extends Component {
             res_model: "otm.swm.association.member",
             views: [[false, "list"], [false, "form"]],
             domain: [["subscription_valid", "=", false]],
+            target: "current",
+        });
+    }
+
+    onKpiPendingPayments() {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Pending Subscription Payments",
+            res_model: "otm.swm.subscription.payment",
+            views: [[false, "list"], [false, "form"]],
+            domain: [["state", "=", "pending"]],
             target: "current",
         });
     }

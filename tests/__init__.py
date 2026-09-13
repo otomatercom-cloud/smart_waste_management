@@ -10,3 +10,4 @@ from . import test_noise_handling
 from . import test_rfid_access
 from . import test_subscription_plans
 from . import test_wallet_billing
+from . import test_subscription_approval

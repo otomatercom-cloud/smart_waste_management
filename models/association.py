@@ -200,28 +200,16 @@ class SwmAssociationMember(models.Model):
             rec.subscription_payment_count = len(rec.subscription_payment_ids)
 
     def action_renew_subscription(self):
-        """Extend subscription_expiry using the assigned plan's duration
-        and current price (falling back to the global renewal-period
-        setting with no charge if no plan is assigned), extending from
-        today - not from the old expiry, so a lapsed member renewing
-        gets a fresh full period rather than back-dated coverage. Logs
-        exactly what was charged, snapshotted, so later editing the
-        plan's price never rewrites this history."""
+        """Manager-triggered renewal: creates an already-approved
+        payment record, which applies the wallet top-up and expiry
+        extension immediately (see
+        otm.swm.subscription.payment._apply_to_member - that method is
+        the single source of truth for this math, shared with the
+        portal self-service approval flow, so the two can never drift
+        apart)."""
         Payment = self.env["otm.swm.subscription.payment"]
         for rec in self:
             plan = rec.subscription_plan_id
-            days = (plan.duration_days if plan else
-                    self.env["res.config.settings"].swm_get_int(
-                        "subscription_renewal_days", 30))
-            today = fields.Date.context_today(rec)
-            new_expiry = fields.Date.add(today, days=days)
-            rec.write({
-                "subscription_active": True,
-                "subscription_expiry": new_expiry,
-                "subscription_last_reminder_date": False,
-                "wallet_balance": rec.wallet_balance + (
-                    plan.price if plan else 0.0),
-            })
             Payment.create({
                 "member_id": rec.id,
                 "plan_id": plan.id if plan else False,
@@ -229,10 +217,32 @@ class SwmAssociationMember(models.Model):
                 "amount": plan.price if plan else 0.0,
                 "currency_id": (plan.currency_id.id if plan
                                 else self.env.company.currency_id.id),
-                "payment_date": today,
-                "period_start": today,
-                "period_end": new_expiry,
+                "payment_date": fields.Date.context_today(rec),
+                "state": "approved",
             })
+        return True
+
+    def action_request_subscription_payment(self):
+        """Portal self-service: the member picks their plan and claims
+        they've paid for it (in cash, UPI, etc. outside Odoo). This
+        creates a Pending payment record - it does NOT touch their
+        wallet or expiry yet. A manager reviewing Subscription Payments
+        must call action_approve() on it before anything actually
+        activates. Requires a plan to already be assigned."""
+        self.ensure_one()
+        plan = self.subscription_plan_id
+        if not plan:
+            return False
+        self.env["otm.swm.subscription.payment"].create({
+            "member_id": self.id,
+            "plan_id": plan.id,
+            "plan_name": plan.name,
+            "amount": plan.price,
+            "currency_id": plan.currency_id.id,
+            "payment_date": fields.Date.context_today(self),
+            "state": "pending",
+            "is_self_service": True,
+        })
         return True
 
     def action_view_payment_history(self):

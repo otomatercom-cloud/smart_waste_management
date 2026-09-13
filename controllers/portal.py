@@ -114,6 +114,48 @@ class SwmPortal(http.Controller):
         return request.redirect("/my/waste/telegram")
 
     # ------------------------------------------------------------------
+    # Subscription: pick a plan, self-declare payment, await approval
+    # ------------------------------------------------------------------
+    @http.route("/my/waste/subscription", type="http", auth="user",
+                website=False)
+    def subscription_page(self, **kw):
+        env = request.env
+        member = env["otm.swm.association.member"]._member_for_user(env.user)
+        if not member:
+            return request.redirect("/my/waste")
+        plans = env["otm.swm.subscription.plan"].sudo().search(
+            [("active", "=", True)])
+        payments = env["otm.swm.subscription.payment"].sudo().search(
+            [("member_id", "=", member.id)], order="payment_date desc",
+            limit=10)
+        return request.render(
+            "smart_waste_management.portal_subscription_page", {
+                "member": member,
+                "plans": plans,
+                "payments": payments,
+                "page_name": "swm_subscription",
+            })
+
+    @http.route("/my/waste/subscription/select-plan", type="http",
+                auth="user", methods=["POST"], website=False, csrf=True)
+    def subscription_select_plan(self, **post):
+        env = request.env
+        member = env["otm.swm.association.member"]._member_for_user(env.user)
+        plan_id = post.get("plan_id")
+        if member and plan_id:
+            member.sudo().write({"subscription_plan_id": int(plan_id)})
+        return request.redirect("/my/waste/subscription")
+
+    @http.route("/my/waste/subscription/mark-paid", type="http",
+                auth="user", methods=["POST"], website=False, csrf=True)
+    def subscription_mark_paid(self, **post):
+        env = request.env
+        member = env["otm.swm.association.member"]._member_for_user(env.user)
+        if member:
+            member.sudo().action_request_subscription_payment()
+        return request.redirect("/my/waste/subscription?submitted=1")
+
+    # ------------------------------------------------------------------
     # Collection staff dashboard
     # ------------------------------------------------------------------
     @http.route("/my/waste/staff", type="http", auth="user", website=False)

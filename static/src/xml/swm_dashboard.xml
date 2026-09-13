@@ -106,6 +106,12 @@
                              t-esc="state.kpi.subscriptions_lapsed"/>
                         <div class="swm-tile-label">Lapsed Subscriptions</div>
                     </div>
+                    <div class="swm-tile swm-tile-primary"
+                         t-on-click="onKpiPendingPayments">
+                        <div class="swm-tile-num"
+                             t-esc="state.kpi.payments_pending"/>
+                        <div class="swm-tile-label">Pending Payments</div>
+                    </div>
                 </div>
 
                 <div class="swm-dash-columns">

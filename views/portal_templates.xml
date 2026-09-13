@@ -31,11 +31,18 @@
                         </t>
                         <t t-else="">Smart Bins</t>
                     </h3>
-                    <a href="/my/waste/telegram"
-                       class="btn btn-outline-primary btn-sm">
-                        <i class="fa fa-telegram me-1" role="img"
-                           aria-label="Telegram"/> Notifications
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="/my/waste/subscription"
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-credit-card me-1" role="img"
+                               aria-label="Subscription"/> Subscription
+                        </a>
+                        <a href="/my/waste/telegram"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-telegram me-1" role="img"
+                               aria-label="Telegram"/> Notifications
+                        </a>
+                    </div>
                 </div>
 
                 <!-- KPI tiles -->
@@ -346,6 +353,129 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============ Subscription: pick plan, self-declare payment ==== -->
+    <template id="portal_subscription_page"
+              name="Smart Waste: Subscription">
+        <t t-call="portal.portal_layout">
+            <div class="container swm-portal py-3" style="max-width: 640px;">
+                <a href="/my/waste" class="btn btn-link ps-0 mb-2">
+                    <i class="fa fa-arrow-left me-1" role="img"
+                       aria-label="Back"/> Back to dashboard
+                </a>
+                <h3>Subscription</h3>
+
+                <div t-if="request.params.get('submitted')"
+                     class="alert alert-success">
+                    <i class="fa fa-check-circle me-1" role="img"
+                       aria-label="Submitted"/>
+                    Your payment claim has been submitted. Your
+                    association will review it before it becomes active.
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <span>Current plan</span>
+                            <strong t-out="member.subscription_plan_id.name or 'None'"/>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Wallet balance</span>
+                            <strong t-out="member.wallet_balance"
+                                    t-options="{'widget': 'monetary',
+                                                'display_currency': member.wallet_currency_id}"/>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Status</span>
+                            <span t-attf-class="badge {{ 'bg-success' if member.subscription_valid else 'bg-danger' }}">
+                                <t t-if="member.subscription_valid">Active</t>
+                                <t t-else="">Inactive / Expired</t>
+                            </span>
+                        </div>
+                        <div t-if="member.subscription_expiry"
+                             class="d-flex justify-content-between">
+                            <span>Valid until</span>
+                            <strong t-out="member.subscription_expiry"/>
+                        </div>
+                    </div>
+                </div>
+
+                <h5>Choose a Plan</h5>
+                <form method="post" action="/my/waste/subscription/select-plan"
+                      class="mb-4">
+                    <input type="hidden" name="csrf_token"
+                           t-att-value="request.csrf_token()"/>
+                    <select class="form-select mb-2" name="plan_id" required="required">
+                        <option value="">Select a plan…</option>
+                        <t t-foreach="plans" t-as="p">
+                            <option t-att-value="p.id"
+                                    t-att-selected="'selected' if member.subscription_plan_id.id == p.id else None">
+                                <t t-out="p.name"/> —
+                                <t t-out="p.price"/> / <t t-out="p.duration_days"/> days
+                                <t t-if="p.rate_per_kg">
+                                    (<t t-out="p.rate_per_kg"/>/kg)
+                                </t>
+                            </option>
+                        </t>
+                    </select>
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        Save Plan Choice
+                    </button>
+                </form>
+
+                <h5>I've Paid</h5>
+                <p class="text-muted small">
+                    Once you've paid your association (cash, UPI, bank
+                    transfer, etc.) for your selected plan, tap below to
+                    let them know. Your wallet and subscription only
+                    activate once they approve it.
+                </p>
+                <form method="post" action="/my/waste/subscription/mark-paid">
+                    <input type="hidden" name="csrf_token"
+                           t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn btn-primary"
+                            disabled="disabled"
+                            t-att-disabled="None if member.subscription_plan_id else 'disabled'">
+                        I've Paid — <t t-out="member.subscription_plan_id.price or ''"/>
+                        for <t t-out="member.subscription_plan_id.name or 'no plan selected'"/>
+                    </button>
+                </form>
+
+                <hr/>
+                <h5>Recent Payments</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="payments" t-as="pay">
+                            <td t-out="pay.payment_date"/>
+                            <td t-out="pay.plan_name"/>
+                            <td t-out="pay.amount"/>
+                            <td>
+                                <span t-attf-class="badge {{
+                                    {'pending': 'bg-warning text-dark',
+                                     'approved': 'bg-success',
+                                     'rejected': 'bg-danger'}.get(pay.state, 'bg-secondary') }}">
+                                    <t t-out="dict(pay._fields['state'].selection).get(pay.state)"/>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr t-if="not payments">
+                            <td colspan="4" class="text-muted">
+                                No payments recorded yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </t>
     </template>
