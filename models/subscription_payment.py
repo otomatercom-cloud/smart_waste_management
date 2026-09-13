@@ -55,7 +55,7 @@ class SwmSubscriptionPayment(models.Model):
     notes = fields.Char()
 
     state = fields.Selection(
-        STATES, default="approved", required=True, tracking=True,
+        STATES, default="approved", required=True,
         help="A payment a manager records directly (e.g. via Renew "
              "Subscription, or entered by hand under Subscription "
              "Payments) is approved immediately - it already happened "

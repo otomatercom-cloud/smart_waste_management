@@ -96,6 +96,7 @@ class SwmPortal(http.Controller):
             "selected_status": status or "",
             "page_name": "swm_dashboard",
             "website": _safe_website_val(),
+            "main_object": member,
         })
 
     # ------------------------------------------------------------------
@@ -118,6 +119,7 @@ class SwmPortal(http.Controller):
             "deep_link": deep_link,
             "page_name": "swm_telegram",
             "website": _safe_website_val(),
+            "main_object": member,
         })
 
     @http.route("/my/waste/telegram/disconnect", type="http", auth="user",
@@ -166,6 +168,7 @@ class SwmPortal(http.Controller):
                 "submitted": kw.get("submitted"),
                 "page_name": "swm_subscription",
                 "website": _safe_website_val(),
+                "main_object": member,
             })
 
     @http.route("/my/waste/subscription/select-plan", type="http",
@@ -205,6 +208,7 @@ class SwmPortal(http.Controller):
             "requests": requests_,
             "page_name": "swm_staff",
             "website": _safe_website_val(),
+            "main_object": staff,
         })
 
     @http.route("/my/waste/staff/request/<int:request_id>/<string:action>",
