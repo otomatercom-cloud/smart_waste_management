@@ -140,7 +140,7 @@
                             <field name="swm_session_window_seconds"/>
                         </setting>
                         <setting string="Per-Kg Wallet Billing"
-                                 help="Deduct weight_deposited x plan rate from a member's wallet balance when their visit closes. Only plans with Included Kg set actually bill.">
+                                 help="Deduct weight_deposited x the plan's Rate per Kg from a member's wallet balance when their visit closes. Only plans with a Rate per Kg above 0 actually bill.">
                             <field name="swm_wallet_billing_enabled"/>
                         </setting>
                         <setting string="Low Balance Threshold"

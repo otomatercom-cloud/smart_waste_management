@@ -242,7 +242,7 @@
                                 t-as="a" t-key="a.id"
                                 class="swm-dash-row"
                                 t-on-click="() => this.openAccessLogEntry(a.id)">
-                                <td t-esc="a.create_date"/>
+                                <td t-esc="a.when"/>
                                 <td t-esc="a.bin_code"/>
                                 <td t-esc="a.street_id ? a.street_id[1] : '—'"/>
                                 <td>
@@ -285,7 +285,7 @@
                                 t-as="h" t-key="h.id"
                                 class="swm-dash-row"
                                 t-on-click="() => this.openAccessLogEntry(h.id)">
-                                <td t-esc="h.create_date"/>
+                                <td t-esc="h.when"/>
                                 <td t-esc="h.bin_code"/>
                                 <td t-esc="h.street_id ? h.street_id[1] : '—'"/>
                                 <td t-esc="h.holder_name || '—'"/>

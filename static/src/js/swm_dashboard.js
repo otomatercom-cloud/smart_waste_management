@@ -4,6 +4,7 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
+import { deserializeDateTime } from "@web/core/l10n/dates";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
 const OPEN_STATES = ["new", "assigned", "accepted", "in_progress"];
@@ -175,27 +176,27 @@ export class SwmDashboard extends Component {
         const todayStartStr = todayStart.toISOString().slice(0, 19)
             .replace("T", " ");
 
-        this.state.recentAccess = await orm.searchRead(
+        this.state.recentAccess = (await orm.searchRead(
             "otm.swm.bin.access.log",
             [["granted", "=", true]],
             ["bin_code", "street_id", "holder_name", "staff_id",
                 "weight_deposited_kg", "session_closed", "create_date"],
             { limit: 12, order: "create_date desc" },
-        );
+        )).map((r) => ({ ...r, when: this.formatDateTime(r.create_date) }));
 
         const thresholds = await orm.call(
             "otm.swm.bin", "get_dashboard_thresholds", [])
             .catch(() => ({ heavy_weight_threshold_kg: 10 }));
         const heavyThreshold = thresholds.heavy_weight_threshold_kg;
         this.state.heavyThreshold = heavyThreshold;
-        this.state.heavyDumps = await orm.searchRead(
+        this.state.heavyDumps = (await orm.searchRead(
             "otm.swm.bin.access.log",
             [["granted", "=", true],
                 ["weight_deposited_kg", ">=", heavyThreshold]],
             ["bin_code", "street_id", "holder_name", "staff_id",
                 "weight_deposited_kg", "create_date"],
             { limit: 12, order: "create_date desc" },
-        );
+        )).map((r) => ({ ...r, when: this.formatDateTime(r.create_date) }));
 
         const weightGroups = await orm.formattedReadGroup(
             "otm.swm.bin.access.log",
@@ -222,6 +223,22 @@ export class SwmDashboard extends Component {
             [["subscription_valid", "=", false]]);
 
         this.state.loading = false;
+    }
+
+    formatDateTime(rawUtcString) {
+        // searchRead returns naive UTC strings (e.g. "2026-09-13 01:02:31").
+        // Standard Odoo widgets convert these to the user's timezone
+        // automatically; a plain t-esc on the raw string does not, which
+        // is exactly what made this panel look ~5.5h off from every
+        // other view of the same records for IST users. Route through
+        // the same deserializer the rest of the web client uses.
+        if (!rawUtcString) return "";
+        try {
+            return deserializeDateTime(rawUtcString)
+                .toFormat("dd MMM, HH:mm");
+        } catch {
+            return rawUtcString;
+        }
     }
 
     statusLabel(status) {
