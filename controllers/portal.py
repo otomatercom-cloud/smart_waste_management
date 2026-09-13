@@ -5,6 +5,23 @@ from odoo.http import request
 OPEN_STATES = ("new", "assigned", "accepted", "in_progress")
 
 
+def _safe_website_val():
+    """When the website module is installed, it silently extends
+    portal.frontend_layout to reference a 'website' template variable -
+    normally auto-injected only for requests that go through the
+    website module's own page-dispatch pipeline. Our plain portal
+    controllers never get that injection, which raises KeyError:
+    'website' deep inside portal.portal_layout the moment a logged-in
+    (non-public) user hits any of our pages - regardless of whether
+    website happens to be installed at all on a given deployment. This
+    always supplies a safe value so that never happens, on installs
+    with or without the website module."""
+    try:
+        return request.website
+    except Exception:
+        return False
+
+
 class SwmPortal(http.Controller):
 
     # ------------------------------------------------------------------
@@ -67,6 +84,7 @@ class SwmPortal(http.Controller):
             "selected_street": int(street_id) if street_id else None,
             "selected_status": status or "",
             "page_name": "swm_dashboard",
+            "website": _safe_website_val(),
         })
 
     # ------------------------------------------------------------------
@@ -88,6 +106,7 @@ class SwmPortal(http.Controller):
             "member": member,
             "deep_link": deep_link,
             "page_name": "swm_telegram",
+            "website": _safe_website_val(),
         })
 
     @http.route("/my/waste/telegram/disconnect", type="http", auth="user",
@@ -135,6 +154,7 @@ class SwmPortal(http.Controller):
                 "payments": payments,
                 "submitted": kw.get("submitted"),
                 "page_name": "swm_subscription",
+                "website": _safe_website_val(),
             })
 
     @http.route("/my/waste/subscription/select-plan", type="http",
@@ -173,6 +193,7 @@ class SwmPortal(http.Controller):
             "staff": staff,
             "requests": requests_,
             "page_name": "swm_staff",
+            "website": _safe_website_val(),
         })
 
     @http.route("/my/waste/staff/request/<int:request_id>/<string:action>",
