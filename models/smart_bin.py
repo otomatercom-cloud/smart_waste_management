@@ -669,7 +669,7 @@ class SwmBin(models.Model):
                 "wallet_billing_enabled", True)
             low_threshold = Settings.swm_get_float(
                 "wallet_low_balance_threshold", 0.0)
-            _logger.info(
+            _logger.warning(
                 "SWM BILLING DEBUG: member=%s(id=%s) plan=%r(id=%s) "
                 "plan.rate_per_kg=%r wallet_billed_plan=%s "
                 "wallet_billing_on=%s wallet_balance=%s low_threshold=%s "
@@ -687,13 +687,13 @@ class SwmBin(models.Model):
                 holder_name = member.name
                 if not wallet_billing_on:
                     effective_rate = 0.0  # billing off: never charge
-            _logger.info(
+            _logger.warning(
                 "SWM BILLING DEBUG: FINAL effective_rate=%r granted=%s "
                 "reason=%s", effective_rate, granted, reason)
 
         start_weight = weight_kg if weight_kg is not None \
             else self.current_weight_kg
-        _logger.info(
+        _logger.warning(
             "SWM BILLING DEBUG: writing billing_rate_per_kg=%r to new "
             "access log (granted=%s)", effective_rate if granted else 0.0,
             granted)
