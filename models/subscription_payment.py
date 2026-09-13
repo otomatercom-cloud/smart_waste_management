@@ -6,6 +6,9 @@ class SwmSubscriptionPayment(models.Model):
     _name = "otm.swm.subscription.payment"
     _description = "Subscription Renewal / Payment Record"
     _order = "payment_date desc, id desc"
+    _rec_name = "display_name"
+
+    display_name = fields.Char(compute="_compute_display_name", store=True)
 
     member_id = fields.Many2one(
         "otm.swm.association.member", required=True, ondelete="cascade",
@@ -44,6 +47,15 @@ class SwmSubscriptionPayment(models.Model):
     recorded_by_id = fields.Many2one(
         "res.users", string="Recorded By", default=lambda self: self.env.user)
     notes = fields.Char()
+
+    @api.depends("member_id.name", "plan_name", "payment_date", "amount")
+    def _compute_display_name(self):
+        for rec in self:
+            date_str = rec.payment_date.strftime("%d %b %Y") \
+                if rec.payment_date else ""
+            rec.display_name = (
+                f"{rec.member_id.name or 'Unknown'} — "
+                f"{rec.plan_name or 'No Plan'} ({date_str})")
 
     @api.depends("amount", "plan_price_at_payment")
     def _compute_is_underpaid(self):
