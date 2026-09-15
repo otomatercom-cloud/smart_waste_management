@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXII Smart Bin — IoT Waste Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#0f3d2e;
+    --forest-deep:#0a2a20;
+    --leaf:#3fa876;
+    --leaf-bright:#5fd196;
+    --tech:#2fb4c7;
+    --paper:#f6f4ec;
+    --paper-card:#ffffff;
+    --ink:#12201a;
+    --ink-soft:#4a5a52;
+    --line:#d8ddd2;
+    --alert:#c7522a;
+    --amber:#d9a441;
+    --radius-s:6px;
+    --radius-m:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+
+  /* ---------- layout shell ---------- */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+  section{padding:96px 0;position:relative;}
+  .kicker{
+    display:inline-flex;align-items:baseline;gap:10px;
+    color:var(--leaf);
+    font-weight:600;font-size:14px;letter-spacing:.02em;
+    margin-bottom:14px;
+  }
+  .kicker .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;color:var(--forest);
+    background:rgba(63,168,118,.14);
+    border-radius:4px;padding:2px 7px;
+  }
+  .sec-title{font-size:clamp(28px,3.4vw,42px);line-height:1.08;font-weight:600;margin:0 0 18px;letter-spacing:-.01em;}
+  .sec-lede{font-size:18px;line-height:1.6;color:var(--ink-soft);max-width:640px;margin:0 0 44px;}
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+  .reveal-stagger > *{opacity:0;transform:translateY(20px);transition:opacity .55s ease, transform .55s ease;}
+  .reveal-stagger.in > *{opacity:1;transform:translateY(0);}
+  .reveal-stagger.in > *:nth-child(1){transition-delay:.02s;}
+  .reveal-stagger.in > *:nth-child(2){transition-delay:.09s;}
+  .reveal-stagger.in > *:nth-child(3){transition-delay:.16s;}
+  .reveal-stagger.in > *:nth-child(4){transition-delay:.23s;}
+  .reveal-stagger.in > *:nth-child(5){transition-delay:.30s;}
+  .reveal-stagger.in > *:nth-child(6){transition-delay:.37s;}
+  .reveal-stagger.in > *:nth-child(7){transition-delay:.44s;}
+  .reveal-stagger.in > *:nth-child(8){transition-delay:.51s;}
+
+  /* ---------- top nav ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(246,244,236,.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;}
+  .brandmark{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+  .brandmark .dot{width:9px;height:9px;border-radius:50%;background:var(--leaf-bright);box-shadow:0 0 0 4px rgba(95,209,150,.25);animation:pulse-dot 2.4s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px rgba(95,209,150,.25);}50%{box-shadow:0 0 0 8px rgba(95,209,150,.08);}}
+  .navlinks{display:flex;gap:26px;font-size:13.5px;color:var(--ink-soft);}
+  .navlinks a{text-decoration:none;transition:color .2s;}
+  .navlinks a:hover{color:var(--forest);}
+  @media (max-width:760px){.navlinks{display:none;}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    background:radial-gradient(ellipse 900px 500px at 78% -10%, rgba(63,168,118,.18), transparent 60%),
+               linear-gradient(180deg,var(--forest-deep) 0%, var(--forest) 100%);
+    color:#eef4ee;
+    padding:120px 0 90px;
+    overflow:hidden;
+    position:relative;
+  }
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;}
+  @media (max-width:900px){.hero .wrap{grid-template-columns:1fr;}}
+  .eyebrow-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12.5px;font-weight:600;letter-spacing:.03em;
+    color:#bfe8cf;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.14);
+    padding:6px 12px;border-radius:100px;margin-bottom:26px;
+  }
+  .hero h1{
+    font-size:clamp(38px,5.6vw,64px);
+    font-weight:700;line-height:1.02;letter-spacing:-.015em;
+    margin:0 0 20px;
+  }
+  .hero h1 span{color:var(--leaf-bright);}
+  .hero p.lede{font-size:18px;line-height:1.65;color:#c6d8ca;max-width:480px;margin:0 0 32px;}
+  .hero .flowline{
+    display:flex;flex-wrap:wrap;gap:0;font-family:'JetBrains Mono',monospace;font-size:13px;color:#9fcbae;
+  }
+  .hero .flowline span{padding:7px 0;}
+  .hero .flowline b{color:#fff;font-weight:500;}
+  .hero .flowline .arrow{margin:0 12px;color:var(--leaf-bright);}
+
+  /* animated bin rig */
+  .rig{position:relative;display:flex;justify-content:center;align-items:center;height:380px;}
+  .rig svg{width:100%;max-width:340px;height:auto;overflow:visible;}
+  .signal{transform-origin:center;animation:ripple 2.8s ease-out infinite;}
+  .signal.s2{animation-delay:.5s;}
+  .signal.s3{animation-delay:1s;}
+  @keyframes ripple{
+    0%{opacity:.85;transform:scale(.6);}
+    70%{opacity:0;}
+    100%{opacity:0;transform:scale(1.5);}
+  }
+  .lid-group{animation:lid-swing 5s ease-in-out infinite;transform-origin:64px 88px;}
+  @keyframes lid-swing{
+    0%,20%{transform:rotate(0deg);}
+    35%,75%{transform:rotate(-38deg);}
+    90%,100%{transform:rotate(0deg);}
+  }
+  .status-led{animation:blink 1.8s ease-in-out infinite;}
+  .status-led.led-red{animation-delay:.9s;}
+  @keyframes blink{0%,100%{opacity:.3;}50%{opacity:1;}}
+
+  /* ---------- problem / solution ---------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:840px){.split{grid-template-columns:1fr;}}
+  .panel{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-m);
+    padding:36px;
+  }
+  .panel.problem{border-top:3px solid var(--alert);}
+  .panel.solution{border-top:3px solid var(--leaf);}
+  .panel h3{font-size:20px;margin:0 0 20px;display:flex;align-items:center;gap:10px;}
+  .plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;}
+  .plist li{display:flex;gap:12px;font-size:15px;line-height:1.5;color:var(--ink-soft);}
+  .plist li .mk{flex:none;width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px;}
+  .problem .mk{background:rgba(199,82,42,.12);color:var(--alert);}
+  .solution-flow{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;
+  }
+  .solution-flow .step{
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;
+    background:var(--forest);color:#eafaf0;padding:7px 12px;border-radius:100px;
+  }
+  .solution-flow .sep{color:var(--leaf);font-size:14px;align-self:center;}
+
+  /* ---------- how it works: timeline ---------- */
+  .timeline{position:relative;padding-left:6px;}
+  .tl-item{
+    display:grid;grid-template-columns:56px 1fr;gap:20px;
+    padding-bottom:34px;position:relative;
+  }
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:'';position:absolute;left:27px;top:56px;bottom:0;width:1.5px;
+    background:var(--line);
+  }
+  .tl-item:last-child::before{display:none;}
+  .tl-num{
+    width:54px;height:54px;border-radius:50%;
+    background:var(--paper-card);border:1.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:600;font-size:17px;color:var(--forest);
+    flex:none;transition:border-color .3s, background .3s, color .3s, transform .3s;
+  }
+  .tl-item.in .tl-num{border-color:var(--leaf);background:var(--forest);color:#eafaf0;transform:scale(1.04);}
+  .tl-body h4{margin:8px 0 6px;font-size:17px;font-weight:600;}
+  .tl-body p{margin:0;color:var(--ink-soft);font-size:14.5px;line-height:1.55;max-width:520px;}
+
+  /* ---------- system overview ---------- */
+  .overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;}
+  @media (max-width:900px){.overview-grid{grid-template-columns:1fr;}}
+  .bin-diagram{position:relative;display:flex;justify-content:center;}
+  .bin-diagram svg{width:100%;max-width:280px;height:auto;}
+  .label-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;}
+  .label-list li{
+    display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line);
+  }
+  .label-list li:first-child{padding-top:0;}
+  .label-list .chip{
+    flex:none;width:30px;height:30px;border-radius:8px;background:rgba(47,180,199,.12);color:var(--tech);
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+  }
+  .label-list b{display:block;font-size:15px;font-weight:600;}
+  .label-list span{font-size:13.5px;color:var(--ink-soft);}
+
+  /* ---------- component cards ---------- */
+  .comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-m);overflow:hidden;}
+  @media (max-width:900px){.comp-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.comp-grid{grid-template-columns:1fr;}}
+  .comp-cell{
+    background:var(--paper-card);padding:26px 22px;
+    display:flex;flex-direction:column;gap:10px;
+    transition:background .25s;
+  }
+  .comp-cell:hover{background:#f1fbf5;}
+  .comp-cell .ic{
+    width:38px;height:38px;border-radius:9px;background:var(--forest);color:#eafaf0;
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+  }
+  .comp-cell b{font-size:14.5px;font-weight:600;}
+  .comp-cell span{font-size:12.5px;color:var(--ink-soft);}
+
+  /* ---------- data flow ---------- */
+  .flow-strip{
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(180deg,#0f3d2e,#0a2a20);
+    border-radius:var(--radius-m);padding:44px 40px;color:#eafaf0;gap:12px;
+  }
+  @media (max-width:760px){.flow-strip{flex-direction:column;align-items:stretch;}}
+  .flow-node{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1;text-align:center;}
+  .flow-node .fic{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .flow-node b{font-size:14px;}
+  .flow-node span{font-size:12px;color:#a9c8b2;}
+  .flow-node ul{list-style:none;margin:6px 0 0;padding:0;font-size:11.5px;color:#9fcbae;text-align:left;}
+  .flow-node ul li{padding:1px 0;}
+  .flow-arrow{flex:none;width:60px;height:2px;position:relative;background:rgba(255,255,255,.16);overflow:visible;}
+  @media (max-width:760px){.flow-arrow{width:2px;height:34px;}}
+  .flow-arrow::after{
+    content:'';position:absolute;top:-3px;right:-1px;width:8px;height:8px;
+    border-right:2px solid var(--leaf-bright);border-bottom:2px solid var(--leaf-bright);
+    transform:rotate(-45deg);
+  }
+  @media (max-width:760px){.flow-arrow::after{top:auto;bottom:-2px;right:-4px;transform:rotate(45deg);}}
+  .flow-pulse{position:absolute;top:-2px;left:0;width:6px;height:6px;border-radius:50%;background:var(--leaf-bright);animation:travel 2.2s linear infinite;box-shadow:0 0 8px var(--leaf-bright);}
+  @media (max-width:760px){.flow-pulse{left:-2px;top:0;animation:travel-v 2.2s linear infinite;}}
+  @keyframes travel{0%{left:0;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{left:100%;opacity:0;}}
+  @keyframes travel-v{0%{top:0;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:100%;opacity:0;}}
+
+  /* ---------- alerts ---------- */
+  .alert-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media (max-width:800px){.alert-grid{grid-template-columns:1fr;}}
+  .alert-card{
+    border-radius:var(--radius-m);padding:28px;
+    border:1px solid var(--line);background:var(--paper-card);
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .alert-card .aic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .alert-card.danger .aic{background:rgba(199,82,42,.12);color:var(--alert);}
+  .alert-card.warn .aic{background:rgba(217,164,65,.15);color:var(--amber);}
+  .alert-card.ok .aic{background:rgba(63,168,118,.14);color:var(--leaf);}
+  .alert-card b{font-size:15.5px;font-weight:600;}
+  .alert-card span{font-size:13.5px;color:var(--ink-soft);}
+
+  /* ---------- benefits ---------- */
+  .benefit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px 32px;}
+  @media (max-width:800px){.benefit-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.benefit-grid{grid-template-columns:1fr;}}
+  .benefit{display:flex;gap:14px;align-items:flex-start;}
+  .benefit .bic{flex:none;width:36px;height:36px;border-radius:50%;background:rgba(63,168,118,.14);color:var(--leaf);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .benefit b{display:block;font-size:14.5px;font-weight:600;margin-bottom:2px;}
+  .benefit span{font-size:13px;color:var(--ink-soft);}
+
+  /* ---------- future scope ---------- */
+  .future-wrap{background:var(--paper-card);border:1px solid var(--line);border-radius:var(--radius-m);padding:40px 44px;}
+  .future-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:16px 40px;}
+  @media (max-width:700px){.future-list{grid-template-columns:1fr;}}
+  .future-list li{display:flex;gap:12px;font-size:15px;color:var(--ink-soft);align-items:flex-start;}
+  .future-list li .ck{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--leaf);display:flex;align-items:center;justify-content:center;color:var(--leaf);font-size:11px;margin-top:1px;}
+
+  /* ---------- footer ---------- */
+  footer{
+    background:var(--forest-deep);color:#eafaf0;text-align:center;padding:56px 0 40px;
+  }
+  footer .tag{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,3vw,30px);font-weight:600;margin:0 0 10px;}
+  footer .sub{font-size:13px;color:#8fb79c;}
+
+  ::selection{background:var(--leaf);color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brandmark"><span class="dot"></span> AXII SMART BIN</div>
+    <nav class="navlinks">
+      <a href="#problem">Problem</a>
+      <a href="#works">How it works</a>
+      <a href="#components">Components</a>
+      <a href="#flow">Data flow</a>
+      <a href="#benefits">Benefits</a>
+    </nav>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow-tag">🌍 Clean today, greener tomorrow</div>
+      <h1>Smart technology for a<br><span>cleaner community.</span></h1>
+      <p class="lede">AXII Smart Bin is an IoT-based waste management system that identifies users, measures waste, monitors fill level, and reports everything to Odoo in real time.</p>
+      <div class="flowline">
+        <span><b>Identify</b></span><span class="arrow">→</span>
+        <span><b>Open</b></span><span class="arrow">→</span>
+        <span><b>Measure</b></span><span class="arrow">→</span>
+        <span><b>Monitor</b></span><span class="arrow">→</span>
+        <span><b>Record</b></span><span class="arrow">→</span>
+        <span><b>Alert</b></span>
+      </div>
+    </div>
+    <div class="rig">
+      <svg viewBox="0 0 160 200" fill="none">
+        <circle class="signal" cx="64" cy="40" r="10" stroke="#5fd196" stroke-width="1.4"/>
+        <circle class="signal s2" cx="64" cy="40" r="10" stroke="#5fd196" stroke-width="1.4"/>
+        <circle class="signal s3" cx="64" cy="40" r="10" stroke="#5fd196" stroke-width="1.4"/>
+        <path d="M50 34 Q64 20 78 34" stroke="#9fcbae" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M55 39 Q64 30 73 39" stroke="#9fcbae" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <circle cx="64" cy="45" r="2.2" fill="#5fd196"/>
+        <!-- bin body -->
+        <rect x="30" y="88" width="68" height="90" rx="8" fill="#12463480" stroke="#3fa876" stroke-width="1.6"/>
+        <rect x="38" y="130" width="52" height="42" rx="4" fill="#0a2a20" stroke="#2fb4c7" stroke-width="1.2"/>
+        <!-- lid group (rotating) -->
+        <g class="lid-group">
+          <rect x="26" y="74" width="76" height="14" rx="6" fill="#3fa876"/>
+        </g>
+        <!-- status leds -->
+        <circle class="status-led led-green" cx="86" cy="100" r="3" fill="#5fd196"/>
+        <circle class="status-led led-red" cx="96" cy="100" r="3" fill="#c7522a"/>
+        <!-- screen -->
+        <rect x="46" y="98" width="20" height="12" rx="2" fill="#0f3d2e" stroke="#2fb4c7" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM / SOLUTION -->
+<section id="problem">
+  <div class="wrap">
+    <div class="kicker"><span class="num">01–02</span> The situation</div>
+    <h2 class="sec-title reveal">Bins fill up. Nobody finds out until it's too late.</h2>
+    <p class="sec-lede reveal">Traditional bins give no signal, no accountability, and no data — AXII replaces guesswork with a connected system.</p>
+
+    <div class="split reveal-stagger">
+      <div class="panel problem">
+        <h3>⚠️ Problem</h3>
+        <ul class="plist">
+          <li><span class="mk">✕</span> No information about bin fill level</li>
+          <li><span class="mk">✕</span> Manual checking takes time and manpower</li>
+          <li><span class="mk">✕</span> Anyone can dump waste, unchecked</li>
+          <li><span class="mk">✕</span> No record of who deposited what</li>
+          <li><span class="mk">✕</span> Overflowing bins create unhygienic conditions</li>
+        </ul>
+      </div>
+      <div class="panel solution">
+        <h3>💡 Our solution</h3>
+        <p style="font-size:14.5px;line-height:1.6;color:var(--ink-soft);margin:0;">An IoT-based bin that identifies users, measures waste, monitors fill level, and sends live data to Odoo — closing every gap above.</p>
+        <div class="solution-flow">
+          <span class="step">Identify</span><span class="sep">→</span>
+          <span class="step">Open</span><span class="sep">→</span>
+          <span class="step">Measure</span><span class="sep">→</span>
+          <span class="step">Monitor</span><span class="sep">→</span>
+          <span class="step">Record</span><span class="sep">→</span>
+          <span class="step">Alert</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="works" style="background:var(--paper-card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap" style="max-width:760px;">
+    <div class="kicker"><span class="num">03</span> Process</div>
+    <h2 class="sec-title reveal">How it works, tap to alert</h2>
+    <p class="sec-lede reveal">Eight steps run automatically every time someone uses the bin.</p>
+
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-num">1</div><div class="tl-body"><h4>Tap RFID card</h4><p>User taps their registered RFID card at the reader on the lid.</p></div></div>
+      <div class="tl-item"><div class="tl-num">2</div><div class="tl-body"><h4>Verify user</h4><p>The RC522 module checks the card against authorized users.</p></div></div>
+      <div class="tl-item"><div class="tl-num">3</div><div class="tl-body"><h4>Lid opens</h4><p>On a valid tap, the MG995 servo motor lifts the lid automatically.</p></div></div>
+      <div class="tl-item"><div class="tl-num">4</div><div class="tl-body"><h4>Deposit waste</h4><p>The user drops their waste into the bin.</p></div></div>
+      <div class="tl-item"><div class="tl-num">5</div><div class="tl-body"><h4>Measure weight</h4><p>The load cell and HX711 amplifier record the added weight.</p></div></div>
+      <div class="tl-item"><div class="tl-num">6</div><div class="tl-body"><h4>Check fill level</h4><p>The HC-SR04 ultrasonic sensor measures remaining bin capacity.</p></div></div>
+      <div class="tl-item"><div class="tl-num">7</div><div class="tl-body"><h4>Send data to Odoo</h4><p>The ESP32 transmits user, weight, and fill data over Wi-Fi.</p></div></div>
+      <div class="tl-item"><div class="tl-num">8</div><div class="tl-body"><h4>Dashboard &amp; alerts</h4><p>Odoo logs the record and triggers alerts where needed.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SYSTEM OVERVIEW -->
+<section>
+  <div class="wrap">
+    <div class="kicker"><span class="num">04</span> Anatomy</div>
+    <h2 class="sec-title reveal">System overview</h2>
+    <p class="sec-lede reveal">Every sensor and actuator has one clear job inside the unit.</p>
+
+    <div class="overview-grid">
+      <div class="bin-diagram reveal">
+        <svg viewBox="0 0 200 240" fill="none">
+          <rect x="40" y="110" width="120" height="120" rx="10" fill="#eef4ee" stroke="#0f3d2e" stroke-width="2"/>
+          <rect x="52" y="150" width="96" height="76" rx="6" fill="#dff2e6" stroke="#3fa876" stroke-width="2"/>
+          <rect x="30" y="96" width="140" height="18" rx="8" fill="#3fa876"/>
+          <rect x="34" y="70" width="70" height="44" rx="6" fill="#0f3d2e" fill-opacity=".08" stroke="#0f3d2e" stroke-width="1.6"/>
+          <circle cx="62" cy="125" r="4" fill="#5fd196"/>
+          <circle cx="72" cy="125" r="4" fill="#c7522a"/>
+          <rect x="86" y="118" width="18" height="12" rx="2" fill="#0f3d2e" stroke="#2fb4c7" stroke-width="1"/>
+        </svg>
+      </div>
+      <ul class="label-list reveal-stagger">
+        <li><span class="chip">📡</span><div><b>Ultrasonic sensor</b><span>Measures fill level continuously.</span></div></li>
+        <li><span class="chip">🖥️</span><div><b>OLED display</b><span>Shows user info and bin status.</span></div></li>
+        <li><span class="chip">🪪</span><div><b>RFID reader</b><span>Controls who can access the bin.</span></div></li>
+        <li><span class="chip">⚙️</span><div><b>Servo motor</b><span>Opens and closes the lid automatically.</span></div></li>
+        <li><span class="chip">⚖️</span><div><b>Load cell</b><span>Measures the weight of deposited waste.</span></div></li>
+        <li><span class="chip">🟢</span><div><b>Status LEDs</b><span>Green for authorized, red for denied.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section id="components" style="background:var(--paper-card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="kicker"><span class="num">05</span> Hardware</div>
+    <h2 class="sec-title reveal">Key components</h2>
+    <p class="sec-lede reveal">Nine parts, each doing one job well.</p>
+
+    <div class="comp-grid reveal-stagger">
+      <div class="comp-cell"><div class="ic">🧠</div><b>ESP32</b><span>Controller + Wi-Fi</span></div>
+      <div class="comp-cell"><div class="ic">🪪</div><b>RC522 RFID</b><span>User identification</span></div>
+      <div class="comp-cell"><div class="ic">⚖️</div><b>Load Cell + HX711</b><span>Weight measurement</span></div>
+      <div class="comp-cell"><div class="ic">📏</div><b>HC-SR04</b><span>Fill level sensor</span></div>
+      <div class="comp-cell"><div class="ic">⚙️</div><b>MG995 Servo</b><span>Automatic lid</span></div>
+      <div class="comp-cell"><div class="ic">🖥️</div><b>OLED Display</b><span>User information</span></div>
+      <div class="comp-cell"><div class="ic">💡</div><b>Green / Red LED</b><span>Status indication</span></div>
+      <div class="comp-cell"><div class="ic">🔊</div><b>Buzzer</b><span>Audio alert</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA FLOW -->
+<section id="flow">
+  <div class="wrap">
+    <div class="kicker"><span class="num">06</span> Connectivity</div>
+    <h2 class="sec-title reveal">Data flow</h2>
+    <p class="sec-lede reveal">Every action on the bin reaches the dashboard within seconds.</p>
+
+    <div class="flow-strip reveal">
+      <div class="flow-node">
+        <div class="fic">🗑️</div>
+        <b>Smart Bin</b>
+        <span>ESP32 controller</span>
+      </div>
+      <div class="flow-arrow"><div class="flow-pulse"></div></div>
+      <div class="flow-node">
+        <div class="fic">📶</div>
+        <b>Internet</b>
+        <span>Wi-Fi</span>
+      </div>
+      <div class="flow-arrow"><div class="flow-pulse" style="animation-delay:.7s;"></div></div>
+      <div class="flow-node">
+        <div class="fic">☁️</div>
+        <b>Odoo</b>
+        <span>Cloud platform</span>
+      </div>
+      <div class="flow-arrow"><div class="flow-pulse" style="animation-delay:1.4s;"></div></div>
+      <div class="flow-node">
+        <div class="fic">📊</div>
+        <b>Dashboard</b>
+        <ul>
+          <li>User records</li>
+          <li>Waste weight</li>
+          <li>Bin fill level</li>
+          <li>Reports &amp; alerts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SMART ALERTS -->
+<section style="background:var(--paper-card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="kicker"><span class="num">07</span> Notifications</div>
+    <h2 class="sec-title reveal">Smart alerts</h2>
+    <p class="sec-lede reveal">The system reacts to three situations in real time.</p>
+
+    <div class="alert-grid reveal-stagger">
+      <div class="alert-card danger">
+        <div class="aic">🪣</div>
+        <b>Bin full</b>
+        <span>Alert sent to the collection team automatically.</span>
+      </div>
+      <div class="alert-card warn">
+        <div class="aic">⚠️</div>
+        <b>Unauthorized access</b>
+        <span>Buzzer sounds and the attempt is logged.</span>
+      </div>
+      <div class="alert-card ok">
+        <div class="aic">✅</div>
+        <b>Authorized access</b>
+        <span>Lid opens smoothly and the visit is recorded.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section id="benefits">
+  <div class="wrap">
+    <div class="kicker"><span class="num">08</span> Impact</div>
+    <h2 class="sec-title reveal">Benefits</h2>
+    <p class="sec-lede reveal">What changes for the community once AXII is installed.</p>
+
+    <div class="benefit-grid reveal-stagger">
+      <div class="benefit"><div class="bic">🌿</div><div><b>Cleaner surroundings</b><span>No more overflow or scattered waste.</span></div></div>
+      <div class="benefit"><div class="bic">📈</div><div><b>Efficient waste management</b><span>Collection runs are planned, not guessed.</span></div></div>
+      <div class="benefit"><div class="bic">👥</div><div><b>Controlled access</b><span>Only registered users can open the bin.</span></div></div>
+      <div class="benefit"><div class="bic">🗂️</div><div><b>Digital records</b><span>Every deposit is logged automatically.</span></div></div>
+      <div class="benefit"><div class="bic">⏱️</div><div><b>Saves time &amp; manpower</b><span>No manual bin-checking rounds needed.</span></div></div>
+      <div class="benefit"><div class="bic">🌎</div><div><b>Healthier, greener community</b><span>Hygienic surroundings for everyone nearby.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FUTURE SCOPE -->
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="kicker"><span class="num">09</span> What's next</div>
+    <h2 class="sec-title reveal">Future scope</h2>
+    <div class="future-wrap reveal">
+      <ul class="future-list">
+        <li><span class="ck">✓</span> Multiple smart bins deployed across the community</li>
+        <li><span class="ck">✓</span> Mobile / PWA application for residents</li>
+        <li><span class="ck">✓</span> Collection route optimization</li>
+        <li><span class="ck">✓</span> Advanced analytics and reports</li>
+        <li><span class="ck">✓</span> Integration with wider smart-city systems</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="tag">"From smart bins to smart communities."</p>
+    <p class="sub">AXII SMART BIN — IoT-Based Smart Waste Management System</p>
+  </div>
+</footer>
+
+<script>
+  const targets = document.querySelectorAll('.reveal, .reveal-stagger, .tl-item');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:0.18, rootMargin:'0px 0px -60px 0px'});
+  targets.forEach(t=>io.observe(t));
+</script>
+
+</body>
+</html>
