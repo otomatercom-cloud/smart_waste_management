@@ -282,6 +282,41 @@
   footer .sub{font-size:13px;color:#8fb79c;}
 
   ::selection{background:var(--leaf);color:#fff;}
+
+  /* ---------- modules ---------- */
+  .module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media (max-width:980px){.module-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:640px){.module-grid{grid-template-columns:1fr;}}
+  .module-card{
+    background:var(--paper-card);border:1px solid var(--line);border-radius:var(--radius-m);
+    padding:26px 24px;display:flex;flex-direction:column;gap:14px;
+    transition:border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .module-card:hover{border-color:var(--leaf);transform:translateY(-3px);box-shadow:0 14px 30px -18px rgba(15,61,46,.35);}
+  .module-card .mhead{display:flex;align-items:center;gap:12px;}
+  .module-card .mic{
+    flex:none;width:40px;height:40px;border-radius:10px;background:var(--forest);color:#eafaf0;
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+  }
+  .module-card .mnum{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--leaf);font-weight:600;letter-spacing:.02em;}
+  .module-card b{font-size:15px;font-weight:600;display:block;margin-top:1px;}
+  .module-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;}
+  .module-card ul li{
+    font-size:13px;line-height:1.5;color:var(--ink-soft);
+    padding-left:14px;position:relative;
+  }
+  .module-card ul li::before{
+    content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--leaf);
+  }
+  .module-card ul li strong{color:var(--ink);font-weight:600;}
+  .module-card.wide{grid-column:span 1;}
+  .flowchip{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--forest);
+    background:rgba(63,168,118,.1);border:1px solid rgba(63,168,118,.25);
+    padding:9px 16px;border-radius:100px;margin-top:10px;
+  }
+  .flowchip .arrow{color:var(--leaf);}
 </style>
 </head>
 <body>
@@ -294,6 +329,7 @@
       <a href="#works">How it works</a>
       <a href="#components">Components</a>
       <a href="#flow">Data flow</a>
+      <a href="#modules">Modules</a>
       <a href="#benefits">Benefits</a>
     </nav>
   </div>
@@ -305,7 +341,7 @@
     <div>
       <div class="eyebrow-tag">🌍 Clean today, greener tomorrow</div>
       <h1>Smart technology for a<br><span>cleaner community.</span></h1>
-      <p class="lede">AXII Smart Bin is an IoT-based waste management system that identifies users, measures waste, monitors fill level, and reports everything to Odoo in real time.</p>
+      <p class="lede">AXII Smart Bin is an IoT-based waste management system that identifies users, measures waste, monitors fill level, and reports everything to AXII Central App in real time.</p>
       <div class="flowline">
         <span><b>Identify</b></span><span class="arrow">→</span>
         <span><b>Open</b></span><span class="arrow">→</span>
@@ -360,7 +396,7 @@
       </div>
       <div class="panel solution">
         <h3>💡 Our solution</h3>
-        <p style="font-size:14.5px;line-height:1.6;color:var(--ink-soft);margin:0;">An IoT-based bin that identifies users, measures waste, monitors fill level, and sends live data to Odoo — closing every gap above.</p>
+        <p style="font-size:14.5px;line-height:1.6;color:var(--ink-soft);margin:0;">An IoT-based bin that identifies users, measures waste, monitors fill level, and sends live data to AXII Central App — closing every gap above.</p>
         <div class="solution-flow">
           <span class="step">Identify</span><span class="sep">→</span>
           <span class="step">Open</span><span class="sep">→</span>
@@ -388,8 +424,8 @@
       <div class="tl-item"><div class="tl-num">4</div><div class="tl-body"><h4>Deposit waste</h4><p>The user drops their waste into the bin.</p></div></div>
       <div class="tl-item"><div class="tl-num">5</div><div class="tl-body"><h4>Measure weight</h4><p>The load cell and HX711 amplifier record the added weight.</p></div></div>
       <div class="tl-item"><div class="tl-num">6</div><div class="tl-body"><h4>Check fill level</h4><p>The HC-SR04 ultrasonic sensor measures remaining bin capacity.</p></div></div>
-      <div class="tl-item"><div class="tl-num">7</div><div class="tl-body"><h4>Send data to Odoo</h4><p>The ESP32 transmits user, weight, and fill data over Wi-Fi.</p></div></div>
-      <div class="tl-item"><div class="tl-num">8</div><div class="tl-body"><h4>Dashboard &amp; alerts</h4><p>Odoo logs the record and triggers alerts where needed.</p></div></div>
+      <div class="tl-item"><div class="tl-num">7</div><div class="tl-body"><h4>Send data to AXII Central App</h4><p>The ESP32 transmits user, weight, and fill data over Wi-Fi.</p></div></div>
+      <div class="tl-item"><div class="tl-num">8</div><div class="tl-body"><h4>Dashboard &amp; alerts</h4><p>AXII Central App logs the record and triggers alerts where needed.</p></div></div>
     </div>
   </div>
 </section>
@@ -467,7 +503,7 @@
       <div class="flow-arrow"><div class="flow-pulse" style="animation-delay:.7s;"></div></div>
       <div class="flow-node">
         <div class="fic">☁️</div>
-        <b>Odoo</b>
+        <b>AXII Central App</b>
         <span>Cloud platform</span>
       </div>
       <div class="flow-arrow"><div class="flow-pulse" style="animation-delay:1.4s;"></div></div>
@@ -543,6 +579,135 @@
         <li><span class="ck">✓</span> Advanced analytics and reports</li>
         <li><span class="ck">✓</span> Integration with wider smart-city systems</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ODOO MODULES -->
+<section id="modules" style="background:var(--paper-card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <div class="kicker"><span class="num">10</span> Software</div>
+    <h2 class="sec-title reveal">AXII Central App-managed modules</h2>
+    <p class="sec-lede reveal">Everything the bin collects flows into a single AXII Central App backend — organized into eleven working modules.</p>
+
+    <div class="module-grid reveal-stagger">
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">🗑️</div><div><div class="mnum">01</div><b>Bin management</b></div></div>
+        <ul>
+          <li>Unique bin ID and name</li>
+          <li>Status: <strong>Available / Nearly Full / Full / Collection Pending / Offline</strong></li>
+          <li>Area hierarchy: Corporation → Zone → Ward → Association → Street → Bin</li>
+          <li>QR code for each bin</li>
+          <li>Live bin status</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">📊</div><div><div class="mnum">02</div><b>Fill-level monitoring</b></div></div>
+        <ul>
+          <li>Ultrasonic sensor measures bin fill level</li>
+          <li>Live fill percentage</li>
+          <li>Nearly Full / Full / Empty thresholds</li>
+          <li>Automatic collection request when full</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">⚖️</div><div><div class="mnum">03</div><b>Smart weight management</b></div></div>
+        <ul>
+          <li>Load Cell + HX711 measures deposited waste</li>
+          <li>Records weight for every RFID visit</li>
+          <li>Tracks total waste deposited</li>
+          <li>Daily and member-wise weight reports</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">📍</div><div><div class="mnum">04</div><b>Bin location</b></div></div>
+        <ul>
+          <li>GPS / address of each bin</li>
+          <li>Bin linked to street and association</li>
+          <li>Map view showing bin locations and status</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">👥</div><div><div class="mnum">05</div><b>Member management</b></div></div>
+        <ul>
+          <li>Resident / member registration</li>
+          <li>Association and street mapping</li>
+          <li>Subscription management</li>
+          <li>Wallet balance</li>
+          <li>Member self-service portal</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">🪪</div><div><div class="mnum">06</div><b>RFID access control</b></div></div>
+        <ul>
+          <li>RFID card for each member</li>
+          <li>Member card checks subscription status and wallet balance</li>
+          <li>Staff / supervisor cards get authorized access</li>
+          <li>Unauthorized access is prevented</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">💳</div><div><div class="mnum">07</div><b>Subscription &amp; billing</b></div></div>
+        <ul>
+          <li>Different subscription plans</li>
+          <li>Plan duration and per-kg rate</li>
+          <li>Wallet-based billing</li>
+          <li>Automatic deduction based on waste deposited</li>
+          <li>Payment history</li>
+          <li>Low-balance protection</li>
+          <li>Subscription expiry reminders</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">🚛</div><div><div class="mnum">08</div><b>Collection management</b></div></div>
+        <ul>
+          <li>Automatic collection request when bin is full</li>
+          <li>Collection workflow: <strong>Accept → Start → Complete</strong></li>
+          <li>Staff assigned to specific areas / bins</li>
+          <li>Supervisor monitors collection activities</li>
+          <li>Delayed collection escalation</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">👨‍🔧</div><div><div class="mnum">09</div><b>Staff management</b></div></div>
+        <ul>
+          <li>Staff records</li>
+          <li>Assign staff to zones / wards / streets / bins</li>
+          <li>Supervisor management</li>
+          <li>Staff portal for collection tasks</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">📱</div><div><div class="mnum">10</div><b>Telegram notifications</b></div></div>
+        <ul>
+          <li>Bin full alert</li>
+          <li>Collection delay alert</li>
+          <li>Bin collected notification</li>
+          <li>Subscription expiry reminder</li>
+          <li>Payment approval / rejection</li>
+          <li>Waste deposit receipt</li>
+        </ul>
+      </div>
+
+      <div class="module-card">
+        <div class="mhead"><div class="mic">☁️</div><div><div class="mnum">11</div><b>AXII Central App web management</b></div></div>
+        <ul>
+          <li>Central backend for every module above</li>
+          <li>Single source of truth for bins, members and staff</li>
+        </ul>
+        <div class="flowchip">ESP32 Smart Bin <span class="arrow">→</span> Wi-Fi <span class="arrow">→</span> AXII Central App</div>
+      </div>
+
     </div>
   </div>
 </section>
