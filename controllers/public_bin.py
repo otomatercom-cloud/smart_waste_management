@@ -2,7 +2,7 @@
 import logging
 import time
 
-from odoo import http
+from odoo import fields, http
 from odoo.http import request
 
 from ..models.complaint import COMPLAINT_TYPES
@@ -67,6 +67,16 @@ class SwmPublicBin(http.Controller):
             order="completed_time desc", limit=1)
         Settings = env["res.config.settings"]
         stale_minutes = Settings.swm_get_int("device_offline_minutes", 120)
+        Log = env["otm.swm.bin.access.log"]
+        today_start = fields.Datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        today_rows = Log.search([
+            ("bin_id", "=", bin_rec.id),
+            ("granted", "=", True),
+            ("create_date", ">=", today_start),
+        ])
+        today_weight = sum(today_rows.mapped("weight_deposited_kg"))
+        today_amount = sum(today_rows.mapped("amount_charged"))
         return request.render(
             "smart_waste_management.public_bin_details_page", {
                 "bin": bin_rec,
@@ -75,6 +85,8 @@ class SwmPublicBin(http.Controller):
                 "on_time": cycles - breaches,
                 "last_collected": last_collected,
                 "stale_minutes": stale_minutes,
+                "today_weight": today_weight,
+                "today_amount": today_amount,
                 "show_fill": Settings.swm_get_bool(
                     "public_show_fill_percent", True),
             })
