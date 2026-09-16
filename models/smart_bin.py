@@ -638,6 +638,10 @@ class SwmBin(models.Model):
         is_staff_card = bool(card and card.holder_type == "staff")
         bin_is_full_like = self.status in FULL_LIKE
         lock_when_full = Settings.swm_get_bool("lock_when_full_enabled", True)
+        weight_threshold = Settings.swm_get_float(
+            "weight_lock_threshold_kg", 0.0)
+        weight_limit_reached = bool(
+            weight_threshold and self.current_weight_kg >= weight_threshold)
 
         granted = False
         reason = "card_unknown"
@@ -658,6 +662,9 @@ class SwmBin(models.Model):
         elif bin_is_full_like and lock_when_full:
             granted = False
             reason = "bin_full_staff_only"
+        elif weight_limit_reached:
+            granted = False
+            reason = "bin_weight_limit"
         elif Settings.swm_get_bool("subscription_enforcement_enabled", True) \
                 and not member.subscription_valid:
             reason = "subscription_expired"

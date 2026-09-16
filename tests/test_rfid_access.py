@@ -306,3 +306,57 @@ class TestRfidWeightSession(SwmCommon):
         log = self.env["otm.swm.bin.access.log"].search(
             [("card_uid", "=", "SESSION-CARD-1")], limit=1)
         self.assertEqual(log.weight_deposited_kg, 0.0)
+
+
+@tagged("post_install", "-at_install", "swm")
+class TestWeightLockThreshold(SwmCommon):
+
+    def setUp(self):
+        super().setUp()
+        self.member = self.env["otm.swm.association.member"].create({
+            "name": "Weight Lock Test Member",
+            "association_id": self.assoc.id,
+            "street_id": self.street.id,
+        })
+        self.member_card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "WEIGHT-LOCK-CARD",
+            "holder_type": "member",
+            "member_id": self.member.id,
+        })
+        self.staff_card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "WEIGHT-LOCK-STAFF",
+            "holder_type": "staff",
+            "staff_id": self.staff.id,
+        })
+        self.set_param("rfid_enabled", "True")
+        self.set_param("weight_lock_threshold_kg", "15")
+        self.bin.current_weight_kg = 16.0
+
+    def test_member_denied_at_weight_threshold(self):
+        result = self.bin.check_rfid_access("WEIGHT-LOCK-CARD")
+        self.assertEqual(result["access"], "denied")
+        self.assertEqual(result["reason"], "bin_weight_limit")
+
+    def test_staff_bypasses_weight_threshold(self):
+        result = self.bin.check_rfid_access("WEIGHT-LOCK-STAFF")
+        self.assertEqual(result["access"], "granted")
+
+    def test_member_granted_below_threshold(self):
+        self.bin.current_weight_kg = 10.0
+        result = self.bin.check_rfid_access("WEIGHT-LOCK-CARD")
+        self.assertEqual(result["access"], "granted")
+
+    def test_zero_threshold_disables_the_check(self):
+        self.set_param("weight_lock_threshold_kg", "0")
+        result = self.bin.check_rfid_access("WEIGHT-LOCK-CARD")
+        self.assertEqual(result["access"], "granted")
+
+    def test_weight_lock_independent_of_fill_status_lock(self):
+        # Bin is well within normal fill status (not full-like) but
+        # still over the weight threshold - the weight check alone
+        # must deny it.
+        self.assertNotIn(self.bin.status, ("full", "collection_pending",
+                                           "collection_in_progress"))
+        result = self.bin.check_rfid_access("WEIGHT-LOCK-CARD")
+        self.assertEqual(result["access"], "denied")
+        self.assertEqual(result["reason"], "bin_weight_limit")

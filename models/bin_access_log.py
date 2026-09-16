@@ -6,6 +6,7 @@ DENY_REASONS = [
     ("card_inactive", "Card Deactivated"),
     ("subscription_expired", "Subscription Expired/Inactive"),
     ("bin_full_staff_only", "Bin Full - Staff/Supervisor Only"),
+    ("bin_weight_limit", "Bin Weight Limit Reached - Staff Only"),
     ("balance_low", "Wallet Balance Too Low"),
 ]
 

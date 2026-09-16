@@ -65,6 +65,14 @@ class ResConfigSettings(models.TransientModel):
              "supervisor card opens it in that state, so a collector "
              "can service and empty it. When off, a valid member card "
              "always opens the bin regardless of fill status.")
+    swm_weight_lock_threshold_kg = fields.Float(
+        string="Weight Lock Threshold (kg)", default=0.0, digits=(6, 2),
+        config_parameter=PARAM_PREFIX + "weight_lock_threshold_kg",
+        help="A member's card is denied once the bin's measured weight "
+             "reaches this many kg - only staff/supervisor cards open "
+             "it past this point. Independent of the fill-status lock "
+             "above, since load-cell weight can catch cases fill "
+             "percentage alone misses. 0 disables this check entirely.")
     swm_subscription_enforcement_enabled = fields.Boolean(
         string="Enforce Subscription on Access", default=True,
         config_parameter=PARAM_PREFIX + "subscription_enforcement_enabled",

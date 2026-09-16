@@ -111,6 +111,10 @@
                                  help="A member's card is denied while the bin is Full/Pending/In Progress - only staff or supervisor cards open it then, so a collector can service and empty it.">
                             <field name="swm_lock_when_full_enabled"/>
                         </setting>
+                        <setting string="Weight Lock Threshold (kg)"
+                                 help="A member's card is denied once measured weight reaches this many kg - only staff/supervisor cards open it then. 0 disables this check.">
+                            <field name="swm_weight_lock_threshold_kg"/>
+                        </setting>
                         <setting string="Enforce Subscription on Access"
                                  help="Only applies when RFID Access Control is on. On: a lapsed member's card is denied. Off: any active registered card opens the bin regardless of subscription status (still logged).">
                             <field name="swm_subscription_enforcement_enabled"/>
