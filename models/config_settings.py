@@ -73,6 +73,15 @@ class ResConfigSettings(models.TransientModel):
              "it past this point. Independent of the fill-status lock "
              "above, since load-cell weight can catch cases fill "
              "percentage alone misses. 0 disables this check entirely.")
+    swm_auto_confirm_collection_via_rfid = fields.Boolean(
+        string="Auto-Confirm Collection via Staff RFID Tap", default=True,
+        config_parameter=PARAM_PREFIX + "auto_confirm_collection_via_rfid",
+        help="When on, a staff/supervisor RFID tap that closes on a "
+             "full bin also attempts the same sensor-gated collection "
+             "approval as the staff QR scan inside the lid - it only "
+             "actually marks the bin Available if a fresh reading "
+             "genuinely shows empty, exactly like the QR flow. When "
+             "off, only the separate QR scan can confirm a collection.")
     swm_subscription_enforcement_enabled = fields.Boolean(
         string="Enforce Subscription on Access", default=True,
         config_parameter=PARAM_PREFIX + "subscription_enforcement_enabled",

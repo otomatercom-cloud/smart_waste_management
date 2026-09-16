@@ -115,6 +115,10 @@
                                  help="A member's card is denied once measured weight reaches this many kg - only staff/supervisor cards open it then. 0 disables this check.">
                             <field name="swm_weight_lock_threshold_kg"/>
                         </setting>
+                        <setting string="Auto-Confirm Collection via Staff RFID Tap"
+                                 help="A staff card closing on a full bin also attempts the sensor-gated approval the staff QR scan uses - only marks Available if a fresh reading genuinely shows empty.">
+                            <field name="swm_auto_confirm_collection_via_rfid"/>
+                        </setting>
                         <setting string="Enforce Subscription on Access"
                                  help="Only applies when RFID Access Control is on. On: a lapsed member's card is denied. Off: any active registered card opens the bin regardless of subscription status (still logged).">
                             <field name="swm_subscription_enforcement_enabled"/>

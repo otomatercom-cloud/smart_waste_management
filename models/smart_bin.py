@@ -152,6 +152,12 @@ class SwmBin(models.Model):
              "yet closed) whose weight_deposited_kg hasn't been "
              "finalised. Empty when no one's currently mid-visit.")
     session_deadline = fields.Datetime(readonly=True, copy=False)
+    weight_limit_notified = fields.Boolean(
+        default=False, readonly=True, copy=False,
+        help="Set once the weight-limit Telegram notification has been "
+             "sent for the current over-threshold spell, so it fires "
+             "once per crossing rather than on every status ping. "
+             "Cleared when the bin is confirmed collected/emptied.")
     access_log_ids = fields.One2many(
         "otm.swm.bin.access.log", "bin_id", string="Access Log")
     access_log_count = fields.Integer(compute="_compute_access_log_count")
@@ -301,6 +307,7 @@ class SwmBin(models.Model):
             })
             if self.active_session_log_id:
                 self.active_session_log_id.session_end_weight_kg = weight_kg
+            self._check_weight_limit_notify()
 
         if fill_percentage is None and distance_cm is not None \
                 and self.bin_height_cm:
@@ -437,6 +444,31 @@ class SwmBin(models.Model):
     # ------------------------------------------------------------------
     # Full / collected workflows
     # ------------------------------------------------------------------
+    def _check_weight_limit_notify(self):
+        """Fires the weight-limit Telegram notification to collection
+        staff and the supervisor the moment current_weight_kg crosses
+        the threshold - once per crossing, not on every subsequent
+        status ping while it stays over. This is independent of
+        whether anyone actually taps the bin: staff hear about it
+        proactively rather than only discovering it via a denied
+        member tap."""
+        self.ensure_one()
+        Settings = self.env["res.config.settings"]
+        threshold = Settings.swm_get_float("weight_lock_threshold_kg", 0.0)
+        if not threshold:
+            return
+        if self.current_weight_kg >= threshold:
+            if not self.weight_limit_notified:
+                self.weight_limit_notified = True
+                self.env["otm.swm.notification.rule"].sudo().process_event(
+                    "bin_weight_limit_reached", self,
+                    request=self.open_request_id)
+        else:
+            # Dropped back under threshold (e.g. a partial pickup) -
+            # allow the next crossing to notify again.
+            if self.weight_limit_notified:
+                self.weight_limit_notified = False
+
     def _on_bin_full(self):
         self.ensure_one()
         now = fields.Datetime.now()
@@ -552,8 +584,22 @@ class SwmBin(models.Model):
 
         Safe to call with no session open (e.g. a staff visit, or
         weight capture was off) - returns has_session: False rather
-        than raising."""
+        than raising.
+
+        ALSO: if a staff/supervisor card was the one that opened this
+        visit and the bin is currently full-like, this attempts the
+        same sensor-gated collection approval qr_confirm_collection()
+        uses - a fresh reading has to genuinely show empty for it to
+        take effect. This is a convenience on top of that flow, not a
+        replacement: a staff member still can't fake an empty bin by
+        tapping their card, since it's the same real check either
+        way. Governed by the auto_confirm_collection_via_rfid setting
+        (default on); with it off, the separate staff QR scan inside
+        the lid remains the only way to confirm a collection."""
         self.ensure_one()
+        is_staff_visit = bool(self.last_access_staff_id)
+        triggering_staff = self.last_access_staff_id
+
         if weight_kg is not None:
             Settings = self.env["res.config.settings"]
             if Settings.swm_get_bool("weight_capture_enabled", False):
@@ -563,16 +609,29 @@ class SwmBin(models.Model):
                 })
                 if self.active_session_log_id:
                     self.active_session_log_id.session_end_weight_kg = weight_kg
+
+        collection_result = None
+        if (is_staff_visit and self.status in FULL_LIKE
+                and self.env["res.config.settings"].swm_get_bool(
+                    "auto_confirm_collection_via_rfid", True)):
+            collection_result = self.qr_confirm_collection(
+                confirmed_by=triggering_staff.name, via_rfid=True)
+
         if not self.active_session_log_id:
-            return {"has_session": False}
-        log = self._finalize_session(self.active_session_log_id)
-        return {
-            "has_session": True,
-            "weight_deposited_kg": log.weight_deposited_kg,
-            "amount_charged": log.amount_charged,
-            "wallet_balance": log.wallet_balance_after,
-            "member_name": log.holder_name,
-        }
+            result = {"has_session": False}
+        else:
+            log = self._finalize_session(self.active_session_log_id)
+            result = {
+                "has_session": True,
+                "weight_deposited_kg": log.weight_deposited_kg,
+                "amount_charged": log.amount_charged,
+                "wallet_balance": log.wallet_balance_after,
+                "member_name": log.holder_name,
+            }
+        if collection_result is not None:
+            result["collection_confirmed"] = collection_result.get("ok")
+            result["collection_message"] = collection_result.get("message")
+        return result
 
     @api.model
     def cron_close_stale_rfid_sessions(self):
@@ -765,19 +824,29 @@ class SwmBin(models.Model):
             "last_emptied_time": now,
             "collection_completed_time": now,
             "full_since": False,
+            "weight_limit_notified": False,
         })
         self.env["otm.swm.notification.rule"].sudo().process_event(
             "collection_completed", self, request=request)
 
-    def qr_confirm_collection(self):
-        """Staff scanned the collect QR and asks to approve the bin as
-        emptied. Only approved when the sensor corroborates: a fresh
-        reading at or below the empty threshold. Returns a dict with
-        ok + a human message for the page."""
+    def qr_confirm_collection(self, confirmed_by=None, via_rfid=False):
+        """Approve the bin as emptied. Only approved when the sensor
+        corroborates: a fresh reading at or below the empty threshold.
+        Returns a dict with ok + a human message for the page.
+
+        confirmed_by: display name to credit in the audit trail.
+        Defaults to self.env.user.name (the staff QR portal route,
+        where a real logged-in user exists). The RFID auto-confirm
+        path (close_rfid_session) has no logged-in portal user - it
+        passes the staff member's name explicitly instead, with
+        via_rfid=True so the audit trail correctly says which
+        checkpoint approved it."""
         self.ensure_one()
         t = self._thresholds()
         now = fields.Datetime.now()
         Settings = self.env["res.config.settings"]
+        confirmed_by = confirmed_by or self.env.user.name
+        source = _("staff RFID tap") if via_rfid else _("staff QR scan")
 
         if self.status == "maintenance":
             return {"ok": False, "reason": "maintenance",
@@ -807,19 +876,18 @@ class SwmBin(models.Model):
         if request:
             request.sudo().action_mark_done(
                 qr_confirmed=True,
-                note=_("Approved via staff QR scan by %s",
-                       self.env.user.name))
+                note=_("Approved via %s by %s", source, confirmed_by))
         self.sudo().write({
             "status": "available",
             "last_status_change": now,
             "last_emptied_time": now,
             "collection_completed_time": now,
             "full_since": False,
+            "weight_limit_notified": False,
         })
         self.sudo().message_post(body=_(
-            "Collection approved via staff QR scan by %s "
-            "(sensor fill: %s%%).",
-            self.env.user.name, round(self.fill_percentage)))
+            "Collection approved via %s by %s (sensor fill: %s%%).",
+            source, confirmed_by, round(self.fill_percentage)))
         if request:
             self.env["otm.swm.notification.rule"].sudo().process_event(
                 "collection_completed", self, request=request)

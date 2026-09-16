@@ -8,6 +8,7 @@ _logger = logging.getLogger(__name__)
 TRIGGER_TYPES = [
     ("bin_nearly_full", "Bin Nearly Full"),
     ("bin_full", "Bin Full"),
+    ("bin_weight_limit_reached", "Bin Weight Limit Reached"),
     ("collection_pending", "Collection Pending"),
     ("collection_delayed", "Collection Delayed"),
     ("collection_completed", "Collection Completed / Bin Empty"),
@@ -38,8 +39,8 @@ class SwmNotificationTemplate(models.Model):
     body = fields.Text(
         required=True,
         help="Placeholders: {bin_code} {bin_name} {street} {association} "
-             "{ward} {corporation} {fill}% {status} {time} {full_since} "
-             "{request} {staff} {response_hours} {link}")
+             "{ward} {corporation} {fill}% {weight} {status} {time} "
+             "{full_since} {request} {staff} {response_hours} {link}")
     active = fields.Boolean(default=True)
 
     def render(self, bin_rec, request=None, recipient_type=None):
@@ -54,6 +55,7 @@ class SwmNotificationTemplate(models.Model):
             "ward": bin_rec.ward_id.name or "",
             "corporation": bin_rec.corporation_id.name or "",
             "fill": round(bin_rec.fill_percentage or 0),
+            "weight": round(bin_rec.current_weight_kg or 0, 2),
             "status": dict(bin_rec._fields["status"].selection).get(
                 bin_rec.status, bin_rec.status),
             "time": tz_now.strftime("%d-%m-%Y %I:%M %p"),

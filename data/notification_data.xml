@@ -17,6 +17,20 @@ Waste collection is required.
 View: {link}</field>
         </record>
 
+        <record id="tmpl_weight_limit" model="otm.swm.notification.template">
+            <field name="name">Bin Weight Limit Reached</field>
+            <field name="body">⚖️ Bin Weight Limit Reached
+
+Bin: {bin_code}
+Street: {street}
+Association: {association}
+Weight: {weight} kg
+Time: {time}
+
+Members are locked out until the bin is collected.
+View: {link}</field>
+        </record>
+
         <record id="tmpl_nearly_full" model="otm.swm.notification.template">
             <field name="name">Bin Nearly Full</field>
             <field name="body">⚠️ Bin Nearly Full
@@ -92,6 +106,26 @@ The bin has been placed in maintenance mode.</field>
             <field name="recipient_type">association_members</field>
             <field name="channel_telegram" eval="True"/>
             <field name="template_id" ref="tmpl_bin_full"/>
+        </record>
+
+        <record id="rule_weight_limit_staff" model="otm.swm.notification.rule">
+            <field name="name">Bin Weight Limit → Collection Staff (immediate)</field>
+            <field name="trigger_type">bin_weight_limit_reached</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">collection_staff</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_internal" eval="True"/>
+            <field name="template_id" ref="tmpl_weight_limit"/>
+        </record>
+
+        <record id="rule_weight_limit_supervisor" model="otm.swm.notification.rule">
+            <field name="name">Bin Weight Limit → Supervisor (immediate)</field>
+            <field name="trigger_type">bin_weight_limit_reached</field>
+            <field name="delay_number">0</field>
+            <field name="recipient_type">supervisor</field>
+            <field name="channel_telegram" eval="True"/>
+            <field name="channel_internal" eval="True"/>
+            <field name="template_id" ref="tmpl_weight_limit"/>
         </record>
 
         <record id="rule_delay_supervisor" model="otm.swm.notification.rule">

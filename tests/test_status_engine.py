@@ -99,3 +99,47 @@ class TestStatusEngine(SwmCommon):
         self.env["otm.swm.bin"].cron_check_device_offline()
         self.assertEqual(self.bin.status, "offline")
         self.assertFalse(self.bin.device_online)
+
+
+@tagged("post_install", "-at_install", "swm")
+class TestWeightLimitNotification(SwmCommon):
+
+    def setUp(self):
+        super().setUp()
+        self.set_param("weight_capture_enabled", "True")
+        self.set_param("weight_lock_threshold_kg", "10")
+
+    def test_crossing_threshold_sets_notified_flag_once(self):
+        self.bin.process_reading(fill_percentage=10, weight_kg=8.0)
+        self.assertFalse(self.bin.weight_limit_notified)
+        self.bin.process_reading(fill_percentage=10, weight_kg=11.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+
+    def test_repeat_readings_over_threshold_do_not_retrigger(self):
+        self.bin.process_reading(fill_percentage=10, weight_kg=11.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+        # Further pings while still over threshold must not error or
+        # need to do anything different - flag simply stays set.
+        self.bin.process_reading(fill_percentage=10, weight_kg=12.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+
+    def test_dropping_below_then_crossing_again_notifies_again(self):
+        self.bin.process_reading(fill_percentage=10, weight_kg=11.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+        self.bin.process_reading(fill_percentage=10, weight_kg=3.0)
+        self.assertFalse(self.bin.weight_limit_notified)
+        self.bin.process_reading(fill_percentage=10, weight_kg=11.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+
+    def test_zero_threshold_never_sets_flag(self):
+        self.set_param("weight_lock_threshold_kg", "0")
+        self.bin.process_reading(fill_percentage=10, weight_kg=999.0)
+        self.assertFalse(self.bin.weight_limit_notified)
+
+    def test_collection_confirm_resets_flag(self):
+        self.bin.process_reading(fill_percentage=97, weight_kg=11.0)
+        self.assertTrue(self.bin.weight_limit_notified)
+        self.bin.write({"fill_percentage": 5,
+                        "last_reading_time": fields.Datetime.now()})
+        self.bin.qr_confirm_collection()
+        self.assertFalse(self.bin.weight_limit_notified)
