@@ -25,9 +25,11 @@ Bin: {bin_code}
 Street: {street}
 Association: {association}
 Weight: {weight} kg
+Member currently at bin: {member_name}
 Time: {time}
 
-Members are locked out until the bin is collected.
+Members are locked out until the bin is collected. The lid may be
+held open on-site (buzzer/light alarm) until the weight is reduced.
 View: {link}</field>
         </record>
 
