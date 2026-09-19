@@ -30,6 +30,10 @@ class TestWalletBilling(SwmCommon):
         self.set_param("rfid_enabled", "True")
         self.set_param("weight_capture_enabled", "True")
         self.set_param("wallet_billing_enabled", "True")
+        # Per-tap fee defaults to Rs 2 - zeroed here so every existing
+        # test in this class keeps testing per-kg billing in isolation,
+        # exactly as before. See TestPerTapFee below for the fee itself.
+        self.set_param("per_tap_fee", "0")
 
     def test_renewal_tops_up_wallet(self):
         self.assertAlmostEqual(self.member.wallet_balance, 100.0)
@@ -156,3 +160,83 @@ class TestWalletBilling(SwmCommon):
         self.bin.check_rfid_access("WALLET-CARD-1", weight_kg=0.0)
         result = self.bin.close_rfid_session(weight_kg=3.0)
         self.assertAlmostEqual(result["amount_charged"], 90.0)
+
+
+@tagged("post_install", "-at_install", "swm")
+class TestPerTapFee(SwmCommon):
+    """Flat per-tap usage fee, folded into the same amount_charged
+    total as the per-kg weight charge - never a separate line."""
+
+    def setUp(self):
+        super().setUp()
+        self.member = self.env["otm.swm.association.member"].create({
+            "name": "Per-Tap Fee Member",
+            "association_id": self.assoc.id,
+            "street_id": self.street.id,
+        })
+        self.plan = self.env["otm.swm.subscription.plan"].create({
+            "name": "Metered Household", "price": 100.0,
+            "duration_days": 30, "rate_per_kg": 30.0,
+        })
+        self.member.subscription_plan_id = self.plan
+        self.member.action_renew_subscription()  # tops wallet to 100
+        self.card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "TAPFEE-CARD-1",
+            "holder_type": "member",
+            "member_id": self.member.id,
+        })
+        self.set_param("rfid_enabled", "True")
+        self.set_param("weight_capture_enabled", "True")
+        self.set_param("wallet_billing_enabled", "True")
+
+    def test_default_fee_is_two_rupees(self):
+        settings = self.env["res.config.settings"]
+        self.assertAlmostEqual(settings.swm_get_float("per_tap_fee", 2.0), 2.0)
+
+    def test_fee_combined_into_single_amount_charged(self):
+        # 3 kg at Rs 30/kg = Rs 90, plus the Rs 2 flat tap fee = Rs 92
+        # total - ONE number, not two separate charges anywhere.
+        self.bin.check_rfid_access("TAPFEE-CARD-1", weight_kg=0.0)
+        result = self.bin.close_rfid_session(weight_kg=3.0)
+        self.assertAlmostEqual(result["amount_charged"], 92.0)
+        self.assertAlmostEqual(result["wallet_balance"], 8.0)
+        self.assertAlmostEqual(self.member.wallet_balance, 8.0)
+
+    def test_fee_still_charged_on_flat_plan(self):
+        # A flat/unmetered plan (rate_per_kg = 0) skips the weight
+        # charge but the tap itself still costs the flat fee.
+        flat_plan = self.env["otm.swm.subscription.plan"].create({
+            "name": "Flat Plan", "price": 50.0, "duration_days": 30,
+            "rate_per_kg": 0.0,
+        })
+        self.member.subscription_plan_id = flat_plan
+        self.member.action_renew_subscription()
+        balance_before = self.member.wallet_balance
+        self.bin.check_rfid_access("TAPFEE-CARD-1", weight_kg=0.0)
+        result = self.bin.close_rfid_session(weight_kg=5.0)
+        self.assertAlmostEqual(result["amount_charged"], 2.0)
+        self.assertAlmostEqual(
+            self.member.wallet_balance, balance_before - 2.0)
+
+    def test_fee_zero_disables_it(self):
+        self.set_param("per_tap_fee", "0")
+        self.bin.check_rfid_access("TAPFEE-CARD-1", weight_kg=0.0)
+        result = self.bin.close_rfid_session(weight_kg=3.0)
+        self.assertAlmostEqual(result["amount_charged"], 90.0)  # weight only
+
+    def test_custom_fee_amount(self):
+        self.set_param("per_tap_fee", "5")
+        self.bin.check_rfid_access("TAPFEE-CARD-1", weight_kg=0.0)
+        result = self.bin.close_rfid_session(weight_kg=3.0)
+        self.assertAlmostEqual(result["amount_charged"], 95.0)
+
+    def test_staff_tap_never_charged_fee(self):
+        staff_card = self.env["otm.swm.rfid.card"].create({
+            "card_uid": "STAFF-TAPFEE-TEST",
+            "holder_type": "staff",
+            "staff_id": self.staff.id,
+        })
+        balance_before = self.member.wallet_balance
+        self.bin.check_rfid_access("STAFF-TAPFEE-TEST", weight_kg=0.0)
+        self.bin.close_rfid_session(weight_kg=10.0)
+        self.assertAlmostEqual(self.member.wallet_balance, balance_before)

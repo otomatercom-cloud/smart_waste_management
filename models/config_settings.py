@@ -157,6 +157,16 @@ class ResConfigSettings(models.TransientModel):
              "new wallet balance. Only fires when a real charge "
              "happened (a metered plan, non-zero deposit) - never for "
              "staff visits or flat/unmetered plans.")
+    swm_per_tap_fee = fields.Float(
+        string="Per-Tap Usage Fee", default=2.0, digits=(10, 2),
+        config_parameter=PARAM_PREFIX + "per_tap_fee",
+        help="Flat fee deducted from a member's wallet on every granted "
+             "RFID tap that opens a weighed session, in addition to any "
+             "per-kg weight charge. Folded into the SAME amount_charged "
+             "total the weight charge uses - never shown or billed as a "
+             "separate line, on the bill screen, portal, or Telegram "
+             "receipt. Never applies to staff/supervisor taps. Set to 0 "
+             "to disable.")
 
     swm_reading_retention_days = fields.Integer(
         string="Sensor Reading Retention (days)", default=90,

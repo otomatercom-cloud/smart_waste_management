@@ -520,10 +520,20 @@ class SwmBin(models.Model):
             0.0, log.session_end_weight_kg - log.session_start_weight_kg)
         charge = 0.0
         balance_after = log.member_id.wallet_balance if log.member_id else 0.0
-        if log.member_id and log.billing_rate_per_kg:
-            charge = round(deposited * log.billing_rate_per_kg, 2)
-            log.member_id.wallet_balance -= charge
-            balance_after = log.member_id.wallet_balance
+        if log.member_id:
+            # Per-kg weight charge (0 for flat/unmetered plans or when
+            # billing is off - see billing_rate_per_kg on the log) plus
+            # the flat per-tap fee, folded into ONE total. Never a
+            # separate line anywhere it's shown - bill screen, portal,
+            # Telegram receipt all just see the combined amount_charged.
+            weight_charge = (round(deposited * log.billing_rate_per_kg, 2)
+                              if log.billing_rate_per_kg else 0.0)
+            per_tap_fee = self.env["res.config.settings"].swm_get_float(
+                "per_tap_fee", 2.0)
+            charge = round(weight_charge + per_tap_fee, 2)
+            if charge:
+                log.member_id.wallet_balance -= charge
+                balance_after = log.member_id.wallet_balance
         log.write({
             "weight_deposited_kg": deposited,
             "amount_charged": charge,

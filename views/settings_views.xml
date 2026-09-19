@@ -159,6 +159,10 @@
                                  help="Message a connected member with kg deposited, amount charged, and new balance the moment they're actually billed.">
                             <field name="swm_billing_receipt_enabled"/>
                         </setting>
+                        <setting string="Per-Tap Usage Fee"
+                                 help="Flat fee deducted from a member's wallet on every granted tap, folded into the same amount charged as the weight charge (never shown separately). Staff taps are never charged. 0 disables it.">
+                            <field name="swm_per_tap_fee"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>
